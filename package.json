@@ -15,14 +15,30 @@
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.3"
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^9.0.0",
+    "babel-preset-flow": "^6.23.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "flow-bin": "^0.79.1",
+    "husky": "^0.14.3",
+    "lint-staged": "^7.2.2",
+    "prettier-eslint": "^8.8.2"
   },
   "scripts": {
-    "start": "nodemon --exec babel-node src/server.js"
+    "start": "nodemon --exec babel-node src/server.js",
+    "pretty": "eslint --fix"
   },
   "babel": {
     "presets": [
       "env"
     ]
+  },
+  "lint-staged": {
+    "*.js": [
+      "yarn pretty",
+      "git add"
+    ]
   }
+  
 }

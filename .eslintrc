@@ -1,0 +1,17 @@
+{
+    "env": {
+      "commonjs": true,
+      "browser": true,
+      "es6": true,
+      "node": true,
+      "serviceworker": true,
+      "mocha": true
+    },
+    "parser": "babel-eslint",
+    "extends": "airbnb",
+    "rules": {
+      "import/first": ["warn", "DISABLE-absolute-first"],
+      "quotes": ["warn", "single"]
+    }
+  }
+  

@@ -9,9 +9,9 @@
     },
     "parser": "babel-eslint",
     "extends": "airbnb",
+    "plugins": ["import"],
     "rules": {
       "import/first": ["warn", "DISABLE-absolute-first"],
       "quotes": ["warn", "single"]
     }
   }
-  

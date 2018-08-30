@@ -8,7 +8,7 @@
       "mocha": true
     },
     "parser": "babel-eslint",
-    "extends": "airbnb",
+    "extends": "airbnb-base",
     "plugins": ["import"],
     "rules": {
       "import/first": ["warn", "DISABLE-absolute-first"],

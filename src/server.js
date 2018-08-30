@@ -1,10 +1,12 @@
+/* eslint-disable global-require, no-console, no-unused-vars */
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
+import db from './db';
 
 if (!process.env.PORT) {
-    require('dotenv').config();
-  }
+  require('dotenv').config();
+}
 
 const port = process.env.PORT || 3001;
 
@@ -12,9 +14,9 @@ const port = process.env.PORT || 3001;
 const app = express();
 
 app.use(cors());
-app.use(bodyParser.urlencoded({extended:true}));
-app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
-app.get('/', (req,res) => res.send("hello world"));
+app.get('/', (req, res) => res.send('hello world'));
 
 app.listen(port, () => console.log(`express is now listening to port ${port}`));

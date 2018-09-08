@@ -1,34 +1,41 @@
-import uuidv4 from 'uuid/v4';
+/* eslint-disable global-require */
+import bcrypt from 'bcryptjs';
+import JWT from 'jsonwebtoken';
+import R from 'ramda';
 import User from '../Models/User';
+import MetaUser from '../Models/MetaUser';
+import { create, findById, findOne } from '../Helpers/db';
 
-export function create(data) {
-  const { res, body } = data;
-
-  User.create({
-    _id: uuidv4(),
-    username: body.username,
-    email: body.email,
-    password: body.password,
-    type: body.type,
-  }, (error, user) => {
-    if (error) {
-      const message = JSON.stringify({ error: `error occurred when trying to register new user with ${error}` });
-      return res.status(500).json({ message });
-    }
-    return res.status(200).json({ user });
-  });
+if (!process.env.JWT_SECRET) {
+  require('dotenv').config();
 }
 
+export const createUser = R.partial(create, [User]);
 
-export function find(data) {
-  const { res, id } = data;
+export const createMetaUser = R.partial(create, [MetaUser]);
 
-  User.findById(id, (error, user) => {
-    if (error) {
-      const message = JSON.stringify({ error: `error occurred when trying to find the user: ${error}` });
-      return res.status(500).json({ message });
+export const findUserById = R.partial(findById, [User]);
+
+export const findOneUser = R.partial(findOne, [User]);
+
+export async function auth(data) {
+  const response = await new Promise(async (resolve, reject) => {
+    const { email, password } = data;
+
+    const user = await findOneUser({ email }).catch(error => error);
+
+    if (user.errmsg) reject(user);
+
+    if (user.password) {
+      if (!bcrypt.compareSync(password, user.password)) {
+        const UnauthorizedError = new Error();
+        UnauthorizedError.errmsg = 'credentials does not match';
+        reject(UnauthorizedError);
+      } else {
+        resolve(JWT.sign({ user }, process.env.JWT_SECRET, { expiresIn: 3600 }));
+      }
     }
-
-    return res.status(200).json({ user });
   });
+
+  return response;
 }

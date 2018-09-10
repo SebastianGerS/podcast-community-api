@@ -8,6 +8,8 @@ export default {
       response = await fetchFromListenNotes(req.query);
 
       if (response.results.length === 0) return res.status(404).json({ error: { errmsg: 'no results where found' } });
+
+      response.morePages = response.total - (response.next_offset - 10) !== response.count;
     } else {
       const { term, offset } = req.query;
       const query = {
@@ -35,7 +37,7 @@ export default {
         morePages,
         next_offset: morePages ? skip + limit : null,
         count,
-        result: partialResponse,
+        results: partialResponse,
         total,
       };
     }

@@ -5,13 +5,16 @@ export default {
   async create(req, res) {
     const { body } = req;
     const metaUserId = uuidv4();
+    const {
+      username, email, password, type,
+    } = await User.verifytoken(body.token);
 
     const user = await User.createUser({
       _id: uuidv4(),
-      username: body.username,
-      email: body.email,
-      password: body.password,
-      type: body.type,
+      username,
+      email,
+      password,
+      type,
       metaUser: metaUserId,
     }).catch(error => error);
 
@@ -24,7 +27,11 @@ export default {
 
     if (metaUser.errmsg) return res.status(500).json({ error: metaUser, message: 'error creating the metaUser' });
 
-    return res.status(200).json({ user });
+    const token = await User.auth(req.body).catch(error => error);
+
+    if (token.errmsg) return res.status(500).json({ error: token });
+
+    return res.status(200).json({ token });
   },
   async find(req, res) {
     const user = await User.findUserById(req.params.userId).catch(error => error);
@@ -34,10 +41,7 @@ export default {
     return res.status(200).json({ user });
   },
   async auth(req, res) {
-    const token = await User.auth({
-      email: req.body.email,
-      password: req.body.password,
-    }).catch(error => error);
+    const token = await User.auth(req.body).catch(error => error);
 
     if (token.errmsg) return res.status(500).json({ error: token });
 

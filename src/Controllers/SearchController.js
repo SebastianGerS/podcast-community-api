@@ -9,16 +9,35 @@ export default {
 
       if (response.results.length === 0) return res.status(404).json({ error: { errmsg: 'no results where found' } });
     } else {
+      const { term, offset } = req.query;
       const query = {
-        $or: [{ email: new RegExp(req.query.term, 'i') }, { username: new RegExp(req.query.term, 'i') }],
+        $or: [{ email: new RegExp(term, 'i') }, { username: new RegExp(term, 'i') }],
       };
-      const options = {
-        skip: +req.query.offset,
+      const limit = 10;
+
+      const skip = +offset;
+
+      const partialResponse = await findUsers({ query, skip, limit }).catch(error => error);
+
+      if (partialResponse.errmsg) return res.status(404).json({ error: partialResponse });
+
+      const fullResponse = await findUsers({ query }).catch(error => error);
+
+      if (fullResponse.errmsg) return res.status(404).json({ error: partialResponse });
+
+      const total = fullResponse.length;
+
+      const count = partialResponse.length;
+
+      const morePages = total - skip !== count;
+
+      response = {
+        morePages,
+        next_offset: morePages ? skip + limit : null,
+        count,
+        result: partialResponse,
+        total,
       };
-
-      response = await findUsers({ query, options }).catch(error => error);
-
-      if (response.errmsg) return res.status(404).json({ error: response });
     }
     return res.status(200).json(response);
   },

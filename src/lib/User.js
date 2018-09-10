@@ -4,7 +4,9 @@ import JWT from 'jsonwebtoken';
 import R from 'ramda';
 import User from '../Models/User';
 import MetaUser from '../Models/MetaUser';
-import { create, findById, findOne } from '../Helpers/db';
+import {
+  create, findById, findOne, find,
+} from '../Helpers/db';
 
 if (!process.env.JWT_SECRET) {
   require('dotenv').config();
@@ -50,6 +52,8 @@ export const createMetaUser = R.partial(create, [MetaUser]);
 export const findUserById = R.partial(findById, [User]);
 
 export const findOneUser = R.partial(findOne, [User]);
+
+export const findUsers = R.partial(find, [User, { _id: 1, username: 1, profile_img: 1 }]);
 
 export async function auth(data) {
   const response = await new Promise(async (resolve, reject) => {

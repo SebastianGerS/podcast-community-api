@@ -39,9 +39,11 @@ export async function findOne(Model, input) {
 }
 
 export async function find(Model, fields, input) {
-  const { query, options } = input;
-  const response = await new Promise(
-    (resolve, reject) => Model.find(query, fields, options, (error, output) => {
+  const { query, skip, limit } = input;
+  const response = await new Promise((resolve, reject) => Model.find(query, fields)
+    .skip(skip)
+    .limit(limit)
+    .exec((error, output) => {
       if (error) {
         reject(error);
       }
@@ -51,7 +53,6 @@ export async function find(Model, fields, input) {
         reject(NotFoundError);
       }
       resolve(output);
-    }),
-  );
+    }));
   return response;
 }

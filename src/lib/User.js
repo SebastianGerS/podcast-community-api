@@ -10,6 +10,39 @@ if (!process.env.JWT_SECRET) {
   require('dotenv').config();
 }
 
+export async function verifytoken(token) {
+  const response = await new Promise(async (resolve, reject) => {
+    JWT.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) reject(err);
+      resolve(decoded);
+    });
+  });
+  return response;
+}
+function excludeFields(user) {
+  return {
+    _id: user.id,
+    username: user.username,
+    email: user.email,
+    age: user.age,
+    bio: user.bio,
+    type: user.type,
+    profile_img: {
+      thumb: user.thumb,
+      standard: user.standard,
+      large: user.large,
+    },
+    following: user.following,
+    followers: user.followers,
+    requests: user.requests,
+    listenlist: user.listenlist,
+    subscriptions: user.subscriptions,
+    notifications: user.notifications,
+    events: user.events,
+    restricted: user.restricted,
+
+  };
+}
 export const createUser = R.partial(create, [User]);
 
 export const createMetaUser = R.partial(create, [MetaUser]);
@@ -20,7 +53,7 @@ export const findOneUser = R.partial(findOne, [User]);
 
 export async function auth(data) {
   const response = await new Promise(async (resolve, reject) => {
-    const { email, password } = data;
+    const { email, password } = await verifytoken(data.token).catch(error => error);
 
     const user = await findOneUser({ email }).catch(error => error);
 
@@ -32,7 +65,11 @@ export async function auth(data) {
         UnauthorizedError.errmsg = 'credentials does not match';
         reject(UnauthorizedError);
       } else {
-        resolve(JWT.sign({ user }, process.env.JWT_SECRET, { expiresIn: 3600 }));
+        resolve(JWT.sign(
+          { user: excludeFields(user) },
+          process.env.JWT_SECRET,
+          { expiresIn: 3600 },
+        ));
       }
     }
   });

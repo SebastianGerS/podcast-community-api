@@ -9,7 +9,8 @@ export default {
 
       if (response.results.length === 0) return res.status(404).json({ error: { errmsg: 'no results where found' } });
 
-      response.morePages = response.total - (response.next_offset - 10) !== response.count;
+      response.morePages = (response.total - response.next_offset) > response.count;
+      response.term = req.query.term;
     } else {
       const { term, offset } = req.query;
       const query = {
@@ -35,10 +36,11 @@ export default {
 
       response = {
         morePages,
-        next_offset: morePages ? skip + limit : null,
+        next_offset: skip + limit,
         count,
         results: partialResponse,
         total,
+        term,
       };
     }
     return res.status(200).json(response);

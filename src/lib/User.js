@@ -66,7 +66,7 @@ export async function auth(data) {
     if (user.password) {
       if (!bcrypt.compareSync(password, user.password)) {
         const UnauthorizedError = new Error();
-        UnauthorizedError.errmsg = 'credentials does not match';
+        UnauthorizedError.errmsg = 'Incorect password';
         reject(UnauthorizedError);
       } else {
         resolve(JWT.sign(

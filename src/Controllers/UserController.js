@@ -18,14 +18,23 @@ export default {
       metaUser: metaUserId,
     }).catch(error => error);
 
-    if (user.errmsg) return res.status(500).json({ error: user, message: 'error creating the user' });
+    if (user.errmsg) {
+      let message;
+      if (user.errmsg.includes('username')) {
+        message = 'Username is already in use';
+      } else if (user.errmsg.includes('email')) {
+        message = 'Email is already in registered';
+      }
+
+      return res.status(500).json({ error: user, message });
+    }
 
     const metaUser = await User.createMetaUser({
       _id: metaUserId,
       user: user.id,
     }).catch(error => error);
 
-    if (metaUser.errmsg) return res.status(500).json({ error: metaUser, message: 'error creating the metaUser' });
+    if (metaUser.errmsg) return res.status(500).json({ error: metaUser, message: 'Error creating the metaUser' });
 
     const token = await User.auth(req.body).catch(error => error);
 
@@ -36,7 +45,7 @@ export default {
   async find(req, res) {
     const user = await User.findUserById(req.params.userId).catch(error => error);
 
-    if (user.errmsg) return res.status(500).json({ error: user, message: 'error occurred when trying to find the user' });
+    if (user.errmsg) return res.status(500).json({ error: user, message: 'Error occurred when trying to find the user' });
 
     return res.status(200).json({ user });
   },

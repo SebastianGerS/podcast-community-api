@@ -7,4 +7,5 @@ export default (app) => {
   app.get('/users/:userId', C.UserController.find);
   app.post('/login', C.UserController.auth);
   app.get('/search', C.SearchController.find);
+  app.get('/audio/:audioUrl', C.AudioController.stream);
 };

@@ -14,7 +14,7 @@ export async function findById(Model, id) {
       if (error) reject(error);
       if (!output) {
         const notFoundError = new Error();
-        notFoundError.errmsg = 'User not found';
+        notFoundError.errmsg = 'Not found';
         reject(notFoundError);
       }
       resolve(output);
@@ -29,7 +29,7 @@ export async function findOne(Model, input) {
       if (error) reject(error);
       if (!output) {
         const NotFoundError = new Error();
-        NotFoundError.errmsg = 'User not found';
+        NotFoundError.errmsg = 'Not found';
         reject(NotFoundError);
       }
       resolve(output);
@@ -49,7 +49,7 @@ export async function find(Model, fields, input) {
       }
       if (output.length === 0) {
         const NotFoundError = new Error();
-        NotFoundError.errmsg = 'No user was found';
+        NotFoundError.errmsg = 'No results where found';
         reject(NotFoundError);
       }
       resolve(output);

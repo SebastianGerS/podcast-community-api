@@ -56,4 +56,11 @@ export default {
 
     return res.status(200).json({ token });
   },
+  async update(req, res) {
+    const result = await User.updateUser(req.params.userId, req.body).catch(error => error);
+
+    if (result.errmsg) return res.status(500).json({ error: result });
+
+    return res.status(200).json({ result });
+  },
 };

@@ -5,7 +5,7 @@ import R from 'ramda';
 import User from '../Models/User';
 import MetaUser from '../Models/MetaUser';
 import {
-  create, findById, findOne, find,
+  create, findById, findOne, find, update,
 } from '../Helpers/db';
 
 if (!process.env.JWT_SECRET) {
@@ -21,7 +21,7 @@ export async function verifytoken(token) {
   });
   return response;
 }
-function excludeFields(user) {
+function includeFields(user) {
   return {
     _id: user.id,
     username: user.username,
@@ -30,9 +30,9 @@ function excludeFields(user) {
     bio: user.bio,
     type: user.type,
     profile_img: {
-      thumb: user.thumb,
-      standard: user.standard,
-      large: user.large,
+      thumb: user.profile_img.thumb,
+      standard: user.profile_img.standard,
+      large: user.profile_img.large,
     },
     following: user.following,
     followers: user.followers,
@@ -55,6 +55,8 @@ export const findOneUser = R.partial(findOne, [User]);
 
 export const findUsers = R.partial(find, [User, { _id: 1, username: 1, profile_img: 1 }]);
 
+export const updateUser = R.partial(update, [User]);
+
 export async function auth(data) {
   const response = await new Promise(async (resolve, reject) => {
     const { email, password } = await verifytoken(data.token).catch(error => error);
@@ -62,7 +64,6 @@ export async function auth(data) {
     const user = await findOneUser({ email }).catch(error => error);
 
     if (user.errmsg) reject(user);
-
     if (user.password) {
       if (!bcrypt.compareSync(password, user.password)) {
         const UnauthorizedError = new Error();
@@ -70,7 +71,7 @@ export async function auth(data) {
         reject(UnauthorizedError);
       } else {
         resolve(JWT.sign(
-          { user: excludeFields(user) },
+          { user: includeFields(user) },
           process.env.JWT_SECRET,
           { expiresIn: 3600 },
         ));

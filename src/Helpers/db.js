@@ -56,3 +56,19 @@ export async function find(Model, fields, input) {
     }));
   return response;
 }
+
+export async function update(Model, _id, input) {
+  const response = await new Promise(
+
+    (resolve, reject) => Model.updateOne({ _id }, input, (error, output) => {
+      if (error) reject(error);
+      if (!output) {
+        const NotFoundError = new Error();
+        NotFoundError.errmsg = 'Not found';
+        reject(NotFoundError);
+      }
+      resolve(output);
+    }),
+  );
+  return response;
+}

@@ -12,6 +12,7 @@
     "plugins": ["import"],
     "rules": {
       "import/first": ["warn", "DISABLE-absolute-first"],
-      "quotes": ["warn", "single"]
+      "quotes": ["warn", "single"],
+      "no-underscore-dangle": ["error", { "allow": ["id", "_id"]}]
     }
   }

@@ -47,7 +47,7 @@ export default {
 
     if (user.errmsg) return res.status(500).json({ error: user, message: 'Error occurred when trying to find the user' });
 
-    return res.status(200).json({ user });
+    return res.status(200).json({ user: User.filterFields(user) });
   },
   async auth(req, res) {
     const token = await User.auth(req.body).catch(error => error);
@@ -56,11 +56,20 @@ export default {
 
     return res.status(200).json({ token });
   },
+  async me(req, res) {
+    const user = await User.findUserById(req.userId).catch(error => error);
+
+    if (user.errmsg) return res.status(500).json({ error: user, message: 'Error occurred when trying to find the user' });
+
+    return res.status(200).json({ user: User.filterFields(user) });
+  },
   async update(req, res) {
-    const result = await User.updateUser(req.params.userId, req.body).catch(error => error);
+    const response = await User.handleUserUpdate(req.userId, req.body).catch(error => error);
 
-    if (result.errmsg) return res.status(500).json({ error: result });
+    if (response.errmsg) return res.status(500).json({ error: response });
 
-    return res.status(200).json({ result });
+    response.info = `${Object.keys(req.body)[0]} was updated`;
+
+    return res.status(200).json(response);
   },
 };

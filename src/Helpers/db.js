@@ -1,3 +1,5 @@
+import { updateArray } from './general';
+
 export async function create(Model, input) {
   const response = await new Promise(
     (resolve, reject) => Model.create(input, (error, output) => {
@@ -86,5 +88,24 @@ export async function findAndUpdate(Model, _id, input) {
       resolve(output);
     }),
   );
+  return response;
+}
+
+export async function handleUpdate(Model, modelArrays, id, body) {
+  const input = {};
+
+  const model = await findById(Model, id).catch(error => error);
+  if (model.errmsg) return model;
+
+  Object.keys(body).map((key) => {
+    if (modelArrays.includes(key)) {
+      input[key] = updateArray(model[key], body[key]);
+    } else {
+      input[key] = body[key];
+    }
+    return input;
+  });
+  const response = await update(Model, id, input).catch(error => error);
+
   return response;
 }

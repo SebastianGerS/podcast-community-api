@@ -5,7 +5,6 @@ import R from 'ramda';
 import User from '../Models/User';
 import MetaUser from '../Models/MetaUser';
 import * as Db from '../Helpers/db';
-import { updateArray } from '../Helpers/general';
 
 if (!process.env.JWT_SECRET) {
   require('dotenv').config();
@@ -58,6 +57,11 @@ export const updateUser = R.partial(Db.update, [User]);
 
 export const findAndUpdateUser = R.partial(Db.findAndUpdate, [User]);
 
+export const handleUserUpdate = R.partial(
+  Db.handleUpdate,
+  [User, ['subscriptions', 'following', 'followers', 'restricted', 'listenlist', 'events', 'requests', 'notifications']],
+);
+
 export async function auth(data) {
   const response = await new Promise(async (resolve, reject) => {
     const { email, password } = await verifytoken(data.token).catch(error => error);
@@ -79,26 +83,6 @@ export async function auth(data) {
       }
     }
   });
-
-  return response;
-}
-
-export async function handleUserUpdate(userId, body) {
-  const input = {};
-  await Promise.all(Object.keys(body).map(async (key) => {
-    const updatableArrays = ['subscriptions', 'following', 'followers', 'restricted', 'listenlist', 'events', 'requests', 'notifications'];
-
-    if (updatableArrays.includes(key)) {
-      const user = await findUserById(userId).catch(error => error);
-
-      if (user.errmsg) return user;
-      input[key] = updateArray(user[key], body[key]);
-    } else {
-      input[key] = body[key];
-    }
-    return input;
-  }));
-  const response = await updateUser(userId, input).catch(error => error);
 
   return response;
 }

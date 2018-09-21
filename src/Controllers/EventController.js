@@ -64,13 +64,21 @@ export default {
         body.events = response.event._id;
         body.following = target.item;
 
-        const targetBody = { followers: agent.item, notifications: notification._id };
+        const targetBody = {
+          followers: agent.item,
+          notifications: notification._id,
+          event: response.event._id,
+        };
 
         const updateTargetUser = await handleUserUpdate(target.item, targetBody);
 
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'request') {
-        const targetBody = { notifications: notification._id, requests: agent.item };
+        const targetBody = {
+          notifications: notification._id,
+          requests: agent.item,
+          event: response.event._id,
+        };
 
         const updateTargetUser = await handleUserUpdate(target.item, targetBody);
 
@@ -79,7 +87,11 @@ export default {
         body.events = response.event._id;
         body.followers = target.item;
 
-        const targetBody = { notifications: notification._id, following: agent.item };
+        const targetBody = {
+          notifications: notification._id,
+          following: agent.item,
+          event: response.event._id,
+        };
 
         const updateTargetUser = await handleUserUpdate(target.item, targetBody);
 
@@ -91,10 +103,10 @@ export default {
         body.events = response.event._id;
         body.restricted = target.item;
       } else if (response.event.type === 'recommend') {
-        const targetBody = { notifications: notification._id };
+        const targetBody = { notifications: notification._id, event: response.event._id };
 
         const updateTargetUser = await handleUserUpdate(target.item, targetBody);
-
+        body.events = response.event._id;
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       }
     }

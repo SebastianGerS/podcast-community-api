@@ -16,7 +16,9 @@ const app = express();
 const dir = path.join(__dirname, 'public/images');
 
 app.use(express.static(dir));
-app.use(cors());
+app.use(cors(
+  { origin: process.env.ALLOW_ORIGIN },
+));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 

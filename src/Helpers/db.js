@@ -93,10 +93,8 @@ export async function findAndUpdate(Model, _id, input) {
 
 export async function handleUpdate(Model, modelArrays, id, body) {
   const input = {};
-
   const model = await findById(Model, id).catch(error => error);
   if (model.errmsg) return model;
-
   Object.keys(body).map((key) => {
     if (modelArrays.includes(key)) {
       input[key] = updateArray(model[key], body[key]);
@@ -107,5 +105,20 @@ export async function handleUpdate(Model, modelArrays, id, body) {
   });
   const response = await update(Model, id, input).catch(error => error);
 
+  return response;
+}
+
+export async function deleteOne(Model, input) {
+  const response = await new Promise(
+    (resolve, reject) => Model.deleteOne(input, (error, output) => {
+      if (error) reject(error);
+      if (!output) {
+        const NotFoundError = new Error();
+        NotFoundError.errmsg = 'Not found';
+        reject(NotFoundError);
+      }
+      resolve(output);
+    }),
+  );
   return response;
 }

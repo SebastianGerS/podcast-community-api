@@ -25,6 +25,7 @@ const UserSchema = new Schema({
     standard: { type: String, default: `${process.env.HOST}/default_profile_img.svg` },
     large: { type: String, default: `${process.env.HOST}/default_profile_img.svg` },
   },
+  categories: [{ type: String, ref: 'Category' }],
   metaUser: { type: String, ref: 'MetaUser' },
   following: [{ type: String, ref: 'User' }],
   followers: [{ type: String, ref: 'User' }],

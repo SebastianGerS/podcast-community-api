@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { updateArray } from './general';
 
 export async function create(Model, input) {
@@ -121,4 +122,11 @@ export async function deleteOne(Model, input) {
     }),
   );
   return response;
+}
+
+export async function hashPassword(password) {
+  const rounds = 5;
+  const newSalt = await bcrypt.genSalt(rounds).catch(error => error);
+  const passwordHash = await bcrypt.hash(password, newSalt).catch(error => error);
+  return passwordHash;
 }

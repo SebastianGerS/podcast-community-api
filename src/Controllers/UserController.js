@@ -1,5 +1,6 @@
 import uuidv4 from 'uuid/v4';
 import * as User from '../lib/User';
+import { hashPassword } from '../Helpers/db';
 
 export default {
   async create(req, res) {
@@ -64,6 +65,11 @@ export default {
     return res.status(200).json({ user: User.filterFields(user) });
   },
   async update(req, res) {
+    if (req.body.password) {
+      const password = await User.verifytoken(req.body.password);
+      req.body.password = await hashPassword(password);
+    }
+
     const response = await User.handleUserUpdate(req.userId, req.body).catch(error => error);
 
     if (response.errmsg) return res.status(500).json({ error: response });

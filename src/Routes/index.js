@@ -12,4 +12,8 @@ export default (app) => {
   app.get('/search', C.SearchController.find);
   app.get('/audio/:audioUrl', C.AudioController.stream);
   app.post('/events', verifyToken, C.EventController.create);
+  app.get('/users/:userId/subscriptions', verifyToken, C.PodcastController.find);
+  app.post('/categories', verifyToken, C.CategoryController.create);
+  app.put('/categories/:categoryId', verifyToken, C.CategoryController.update);
+  app.delete('/categories/:categoryId', verifyToken, C.CategoryController.delete);
 };

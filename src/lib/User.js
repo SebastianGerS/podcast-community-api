@@ -59,7 +59,7 @@ export const findAndUpdateUser = R.partial(Db.findAndUpdate, [User]);
 
 export const handleUserUpdate = R.partial(
   Db.handleUpdate,
-  [User, ['subscriptions', 'following', 'followers', 'restricted', 'listenlist', 'events', 'requests', 'notifications']],
+  [User, ['subscriptions', 'following', 'followers', 'restricted', 'listenlist', 'events', 'requests', 'notifications', 'categories']],
 );
 
 export async function auth(data) {

@@ -4,6 +4,7 @@ import * as Event from '../lib/Event';
 import { createNotification } from '../lib/Notification';
 
 import { handleUserUpdate, findUserById } from '../lib/User';
+import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
 
 export default {
   async create(req, res) {
@@ -19,7 +20,20 @@ export default {
     if (target.kind === 'Podcast') {
       const user = await findUserById(req.userId);
       eventBody.type = user.subscriptions.includes(target.item) ? 'unsubscribe' : 'subscribe';
-
+      if (eventBody.type === 'unsubscribe') {
+        await Promise.all(user.categories.map(async (categoryId) => {
+          const category = await findCategoryById(categoryId).catch(error => error);
+          if (category.errmsg) return res.status(500).json({ error: category, message: 'Error finding category' });
+          if (category.podcasts.includes(target.item)) {
+            const categoryWithMatch = await handleCategoryUpdate(
+              category._id,
+              { podcasts: target.item },
+            ).catch(error => error);
+            if (categoryWithMatch.errmsg) return res.status(500).json({ error: categoryWithMatch, message: 'Error removing podcast from category' });
+          }
+          return category;
+        }));
+      }
       response.event = await Event.createEvent(eventBody);
 
       if (response.event.errmsg) return res.status(500).json({ error: response.event, message: 'Error creating the event' });

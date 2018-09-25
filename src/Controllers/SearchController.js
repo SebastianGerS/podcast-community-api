@@ -1,11 +1,11 @@
-import fetchFromListenNotes from '../Helpers/fetch';
+import { searchListenNotes } from '../Helpers/fetch';
 import { findUsers } from '../lib/User';
 
 export default {
   async find(req, res) {
     let response;
     if (req.query.type !== 'user') {
-      response = await fetchFromListenNotes(req.query);
+      response = await searchListenNotes(req.query);
 
       if (response.results.length === 0) return res.status(404).json({ error: { errmsg: 'no results where found' } });
 

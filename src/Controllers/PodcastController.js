@@ -1,6 +1,6 @@
 import { findUserById } from '../lib/User';
 import { findCategoryById } from '../lib/Category';
-import { fetchPodcastListenNotes } from '../Helpers/fetch';
+import { fetchPodcastListenNotes, getTopPodcasts } from '../Helpers/fetch';
 
 export default {
   async find(req, res) {
@@ -49,5 +49,10 @@ export default {
     });
 
     return res.status(200).json({ subscriptions, categories: categoriesWithPodcasts });
+  },
+  async getTopList(req, res) {
+    const response = await getTopPodcasts().catch(error => error);
+    if (response.error) return res.status(404).json({ error: response });
+    return res.status(200).json(response.channels);
   },
 };

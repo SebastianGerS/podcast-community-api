@@ -12,7 +12,7 @@ export async function fetchFromListenNotes(path, query) {
   };
 
   const response = await new Promise((resolve, reject) => {
-    Axios.get(`${process.env.X_MASHAPE_BASE_URL}/${path}/${query}`, { method: 'GET', headers })
+    Axios.get(`${process.env.X_MASHAPE_BASE_URL}/${path}${query}`, { method: 'GET', headers })
       .then((data) => {
         resolve(data.data);
       })
@@ -24,13 +24,18 @@ export async function fetchFromListenNotes(path, query) {
 export async function searchListenNotes(query) {
   const { term, type, offset } = query;
 
-  const response = await fetchFromListenNotes('/search', `?q=${term}&type=${type}&offset=${offset}`);
+  const response = await fetchFromListenNotes('search', `?q=${term}&type=${type}&offset=${offset}`);
 
   return response;
 }
 
 export async function fetchPodcastListenNotes(podcastId) {
-  const response = await fetchFromListenNotes('/podcasts/', podcastId);
+  const response = await fetchFromListenNotes('podcasts/', podcastId);
 
+  return response;
+}
+
+export async function getTopPodcasts() {
+  const response = await fetchFromListenNotes('best_podcasts', '?page=1');
   return response;
 }

@@ -16,4 +16,5 @@ export default (app) => {
   app.post('/categories', verifyToken, C.CategoryController.create);
   app.put('/categories/:categoryId', verifyToken, C.CategoryController.update);
   app.delete('/categories/:categoryId', verifyToken, C.CategoryController.delete);
+  app.get('/toplist', C.PodcastController.getTopList);
 };

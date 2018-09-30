@@ -22,6 +22,7 @@ const verifyToken = (req, res, next) => {
       return res.status(500).json({ error: JsonWebTokenError, message: 'Error during authentification of token' });
     }
     req.userId = decoded.user._id;
+    req.isAdmin = decoded.user.type === 'admin';
     return next();
   });
 };

@@ -9,7 +9,7 @@ export default {
     const {
       username, email, password, type,
     } = await User.verifytoken(body.token);
-
+    if (type === 'admin' && !req.isAdmin) return res.status(403).json({ error: 'Forbidden', message: 'You are not Authorzied to create admin accounts' });
     const user = await User.createUser({
       _id: uuidv4(),
       username,
@@ -50,6 +50,13 @@ export default {
 
     return res.status(200).json({ user: User.filterFields(user) });
   },
+  async findAll(req, res) {
+    const users = await User.findAllUsers({ username: '*' }).catch(error => error);
+
+    if (users.errmsg) return res.status(500).json({ error: users, message: 'Error occurred when trying to find the user' });
+
+    return res.status(200).json({ users });
+  },
   async auth(req, res) {
     const token = await User.auth(req.body).catch(error => error);
 
@@ -70,12 +77,34 @@ export default {
       req.body.password = await hashPassword(password);
     }
 
-    const response = await User.handleUserUpdate(req.userId, req.body).catch(error => error);
+    if (req.params.userId && !req.isAdmin) return res.status(403).json({ error: 'Forbidden', message: 'You are not Authorzied to update this user' });
+    if (req.body.type === 'admin' && !req.isAdmin) return res.status(403).json({ error: 'Forbidden', message: 'You are not Authorzied to update this users type to admin' });
+
+    const userId = req.params.userId ? req.params.userId : req.userId;
+    const response = await User.handleUserUpdate(userId, req.body).catch(error => error);
 
     if (response.errmsg) return res.status(500).json({ error: response });
-
-    response.info = `${Object.keys(req.body)[0]} was updated`;
+    const modifyedFields = Object.keys(req.body).map((key, index, array) => {
+      if (index === array.length - 1) {
+        return `${key} `;
+      }
+      if (index === array.length - 2) {
+        return `${key} and `;
+      }
+      return `${key}, `;
+    }).reduce((accumulator, currentValue) => accumulator + currentValue);
+    response.info = `${modifyedFields}was updated`;
 
     return res.status(200).json(response);
+  },
+  async delete(req, res) {
+    if (req.params.userId && !req.isAdmin) return res.status(403).json({ error: 'Forbidden', message: 'You are not Authorzied to delete this user' });
+    const userId = req.params.userId ? req.params.userId : req.userId;
+
+    const user = await User.deleteUser({ _id: userId }).catch(error => error);
+
+    if (user.errmsg) return res.status(500).json({ error: user, message: 'Error occurred when trying to delete the user' });
+
+    return res.status(200).json({ info: 'User was deleted' });
   },
 };

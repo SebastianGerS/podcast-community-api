@@ -7,7 +7,6 @@ export default (app) => {
   app.get('/me', verifyToken, C.UserController.me);
   app.post('/users', C.UserController.create);
   app.post('/admin/users', verifyToken, C.UserController.create);
-  app.get('/users', verifyToken, C.UserController.findAll);
   app.get('/users/:userId', C.UserController.find);
   app.put('/users', verifyToken, C.UserController.update);
   app.put('/admin/users/:userId', verifyToken, C.UserController.update);

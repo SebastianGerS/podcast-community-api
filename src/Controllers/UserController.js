@@ -50,13 +50,6 @@ export default {
 
     return res.status(200).json({ user: User.filterFields(user) });
   },
-  async findAll(req, res) {
-    const users = await User.findAllUsers({ username: '*' }).catch(error => error);
-
-    if (users.errmsg) return res.status(500).json({ error: users, message: 'Error occurred when trying to find the user' });
-
-    return res.status(200).json({ users });
-  },
   async auth(req, res) {
     const token = await User.auth(req.body).catch(error => error);
 

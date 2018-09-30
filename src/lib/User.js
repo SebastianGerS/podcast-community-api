@@ -53,6 +53,10 @@ export const findOneUser = R.partial(Db.findOne, [User]);
 
 export const findUsers = R.partial(Db.find, [User, { _id: 1, username: 1, profile_img: 1 }]);
 
+export const findAllUsers = R.partial(Db.find, [User, {
+  _id: 1, username: 1, profile_img: 1, email: 1, type: 1,
+}]);
+
 export const updateUser = R.partial(Db.update, [User]);
 
 export const findAndUpdateUser = R.partial(Db.findAndUpdate, [User]);
@@ -61,6 +65,8 @@ export const handleUserUpdate = R.partial(
   Db.handleUpdate,
   [User, ['subscriptions', 'following', 'followers', 'restricted', 'listenlist', 'events', 'requests', 'notifications', 'categories']],
 );
+
+export const deleteUser = R.partial(Db.deleteOne, [User]);
 
 export async function auth(data) {
   const response = await new Promise(async (resolve, reject) => {

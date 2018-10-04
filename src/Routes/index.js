@@ -3,7 +3,7 @@ import C from '../Controllers';
 import verifyToken from '../Middleware/verifyToken';
 
 export default (app) => {
-  app.get('/', (req, res) => res.send('hello world'));
+  app.get('/', (req, res) => res.redirect('https://documenter.getpostman.com/view/3252976/RWgnWzKb#intro'));
   app.get('/me', verifyToken, C.UserController.me);
   app.post('/users', C.UserController.create);
   app.post('/admin/users', verifyToken, C.UserController.create);

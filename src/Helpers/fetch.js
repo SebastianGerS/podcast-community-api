@@ -11,14 +11,22 @@ export async function fetchFromListenNotes(path, query) {
     'X-Mashape-key': process.env.X_MASHAPE_KEY,
   };
 
-  const response = await new Promise((resolve, reject) => {
-    Axios.get(`${process.env.X_MASHAPE_BASE_URL}/${path}${query}`, { method: 'GET', headers })
-      .then((data) => {
-        resolve(data.data);
-      })
-      .then(data => resolve(data)).catch(error => reject(error));
-  });
-  return response;
+  try {
+    const response = await new Promise((resolve, reject) => {
+      Axios.get(`${process.env.X_MASHAPE_BASE_URL}/${path}${query}`, { method: 'GET', headers })
+        .then((data) => {
+          resolve(data.data);
+        })
+        .then(data => resolve(data)).catch(error => reject(error.response));
+    });
+    return response;
+  } catch (error) {
+    const listenNotesError = new Error();
+    listenNotesError.errmsg = error.statusText;
+    listenNotesError.status = error.status;
+
+    return listenNotesError;
+  }
 }
 
 export async function searchListenNotes(query) {

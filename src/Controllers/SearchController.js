@@ -7,10 +7,17 @@ export default {
     if (req.query.type !== 'user') {
       response = await searchListenNotes(req.query);
 
-      if (response.results.length === 0) return res.status(404).json({ error: { errmsg: 'no results where found' } });
-
-      response.morePages = (response.total - response.next_offset) > response.count;
+      response.morePages = (response.total - response.next_offset) > 0;
       response.term = req.query.term;
+      if (response.results) {
+        if (response.results.length === 0) {
+          response.error = new Error();
+          response.error.errmsg = 'No results where found';
+          return res.status(404).json(response);
+        }
+      } else {
+        return res.status(404).json({ error: response });
+      }
     } else {
       const { term, offset } = req.query;
       const query = {

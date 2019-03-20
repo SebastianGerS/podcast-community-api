@@ -17,12 +17,14 @@ export async function fetchFromListenNotes(path, query) {
         .then((data) => {
           resolve(data.data);
         })
-        .then(data => resolve(data)).catch(error => reject(error.response));
+        .then(data => resolve(data)).catch(error => reject(error));
     });
+
     return response;
   } catch (error) {
     const listenNotesError = new Error();
-    listenNotesError.errmsg = error.statusText;
+
+    listenNotesError.errmsg = error.response ? error.response.statusText : 'Unknow error occured when trying send a request to the ListenNotes api';
     listenNotesError.status = error.status;
 
     return listenNotesError;
@@ -30,9 +32,13 @@ export async function fetchFromListenNotes(path, query) {
 }
 
 export async function searchListenNotes(query) {
-  const { term, type, offset } = query;
+  const {
+    term, type, offset, ocid, sortByDate,
+  } = query;
 
-  const response = await fetchFromListenNotes('search', `?q=${term}&type=${type}&offset=${offset}`);
+  const escapedTerm = encodeURI(term);
+
+  const response = await fetchFromListenNotes('search', `?q=${escapedTerm}&type=${type}&offset=${offset}${sortByDate ? '&sort_by_date=1' : ''}${ocid ? `&ocid=${ocid}` : ''}`);
 
   return response;
 }

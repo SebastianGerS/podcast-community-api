@@ -25,7 +25,7 @@ export async function fetchFromListenNotes(path, query) {
     const listenNotesError = new Error();
 
     listenNotesError.errmsg = error.response ? error.response.statusText : 'Unknow error occured when trying send a request to the ListenNotes api';
-    listenNotesError.status = error.status;
+    listenNotesError.status = 404;
 
     return listenNotesError;
   }
@@ -51,5 +51,11 @@ export async function fetchPodcastListenNotes(podcastId) {
 
 export async function getTopPodcasts() {
   const response = await fetchFromListenNotes('best_podcasts', '?page=1');
+  return response;
+}
+
+export async function fetchEpisodeListenNotes(episodeId) {
+  const response = await fetchFromListenNotes('episodes/', episodeId);
+
   return response;
 }

@@ -18,6 +18,7 @@ export default (app) => {
   app.post('/events', verifyToken, C.EventController.create);
   app.get('/users/:userId/subscriptions', verifyToken, C.PodcastController.find);
   app.get('/podcasts/:podcastId', C.PodcastController.findOne);
+  app.get('/episodes/:episodeId', C.EpisodeController.findOne);
   app.post('/categories', verifyToken, C.CategoryController.create);
   app.put('/categories/:categoryId', verifyToken, C.CategoryController.update);
   app.delete('/categories/:categoryId', verifyToken, C.CategoryController.delete);

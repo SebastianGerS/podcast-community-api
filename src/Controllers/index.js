@@ -4,7 +4,7 @@ import AudioController from './AudioController';
 import EventController from './EventController';
 import PodcastController from './PodcastController';
 import CategoryController from './CategoryController';
-
+import EpisodeController from './EpisodeController';
 
 export default {
   UserController,
@@ -13,4 +13,5 @@ export default {
   EventController,
   PodcastController,
   CategoryController,
+  EpisodeController,
 };

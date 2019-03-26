@@ -14,6 +14,7 @@ export default (app) => {
   app.delete('/admin/users/:userId', verifyToken, C.UserController.delete);
   app.post('/login', C.UserController.auth);
   app.get('/search', C.SearchController.find);
+  app.get('/filters', C.SearchController.getFilters);
   app.get('/audio/:audioUrl', C.AudioController.stream);
   app.post('/events', verifyToken, C.EventController.create);
   app.get('/users/:userId/subscriptions', verifyToken, C.PodcastController.find);

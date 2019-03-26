@@ -1,4 +1,4 @@
-import { searchListenNotes } from '../Helpers/fetch';
+import { searchListenNotes, fetchFromListenNotes } from '../Helpers/fetch';
 import { findUsers } from '../lib/User';
 
 export default {
@@ -50,6 +50,22 @@ export default {
         term,
       };
     }
+    return res.status(200).json(response);
+  },
+  async getFilters(req, res) {
+    const response = {};
+
+    const genres = await fetchFromListenNotes('genres', '');
+
+    if (genres.errmsg) return res.status(404).json({ error: genres });
+
+    const languages = await fetchFromListenNotes('languages', '');
+
+    if (languages.errmsg) return res.status(404).json({ error: languages });
+
+    response.genres = genres.genres.map(genre => ({ name: genre.name, value: genre.id }));
+    response.languages = languages.languages;
+
     return res.status(200).json(response);
   },
 };

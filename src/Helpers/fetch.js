@@ -33,12 +33,33 @@ export async function fetchFromListenNotes(path, query) {
 
 export async function searchListenNotes(query) {
   const {
-    term, type, offset, ocid, sortByDate,
+    term, type, offset, filters, ocid, sortByDate,
   } = query;
 
   const escapedTerm = encodeURI(term);
 
-  const response = await fetchFromListenNotes('search', `?q=${escapedTerm}&type=${type}&offset=${offset}${sortByDate ? '&sort_by_date=1' : ''}${ocid ? `&ocid=${ocid}` : ''}`);
+  const decodedFilters = filters ? JSON.parse((decodeURIComponent(filters))) : { genres: [] };
+
+  const genreIds = decodedFilters.genres.length !== 0
+    ? decodedFilters.genres.map(genre => genre.value)
+    : undefined;
+  const field = decodedFilters.field ? decodedFilters.field : undefined;
+  const language = decodedFilters.language ? decodedFilters.language : undefined;
+  const minLength = decodedFilters.len_min !== '' ? decodedFilters.len_min : undefined;
+  const maxLength = decodedFilters.len_max !== '' ? decodedFilters.len_max : undefined;
+
+  const listenNotesQuery = (
+    `?q=${escapedTerm}&type=${type}&offset=${offset}`
+    + `${genreIds ? `&genre_ids=${genreIds}` : ''}`
+    + `${field ? `&field=${field}` : ''}`
+    + `${language ? `&language=${language}` : ''}`
+    + `${minLength ? `&len_min=${minLength}` : ''}`
+    + `${maxLength ? `&len_max=${maxLength}` : ''}`
+    + `${sortByDate ? '&sort_by_date=1' : ''}`
+    + `${ocid ? `&ocid=${ocid}` : ''}`
+  );
+
+  const response = await fetchFromListenNotes('search', listenNotesQuery);
 
   return response;
 }

@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import { searchListenNotes, fetchFromListenNotes } from '../Helpers/fetch';
 import { findUsers } from '../lib/User';
 
@@ -19,12 +20,25 @@ export default {
         return res.status(404).json({ error: response });
       }
     } else {
+      let userId;
+
+      if (req.headers.authorization) {
+        userId = jwt.verify(req.headers.authorization, process.env.JWT_SECRET, (error, decoded) => {
+          if (error) {
+            const JsonWebTokenError = new Error();
+            JsonWebTokenError.errmsg = error.message;
+            return res.status(500).json({ error: JsonWebTokenError, message: 'Error during authentification of token' });
+          }
+          return decoded.user._id;
+        });
+      }
+
       const { term, offset, filters } = req.query;
 
       const decodedFilters = filters ? JSON.parse((decodeURIComponent(filters))) : { };
 
-      const query = decodedFilters.field ? { [`${decodedFilters.field}`]: new RegExp(term, 'i') }
-        : { $or: [{ email: new RegExp(term, 'i') }, { username: new RegExp(term, 'i') }] };
+      const query = decodedFilters.field ? { [`${decodedFilters.field}`]: new RegExp(term, 'i'), _id: { $ne: userId } }
+        : { $or: [{ email: new RegExp(term, 'i') }, { username: new RegExp(term, 'i') }], _id: { $ne: userId } };
       const limit = 10;
 
       const skip = +offset;

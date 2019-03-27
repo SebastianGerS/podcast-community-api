@@ -33,7 +33,7 @@ export async function fetchFromListenNotes(path, query) {
 
 export async function searchListenNotes(query) {
   const {
-    term, type, offset, filters, ocid, sortByDate,
+    term, type, offset, filters, ocid, sorting,
   } = query;
 
   const escapedTerm = encodeURI(term);
@@ -55,7 +55,7 @@ export async function searchListenNotes(query) {
     + `${language ? `&language=${language}` : ''}`
     + `${minLength ? `&len_min=${minLength}` : ''}`
     + `${maxLength ? `&len_max=${maxLength}` : ''}`
-    + `${sortByDate ? '&sort_by_date=1' : ''}`
+    + `${sorting ? `&sort_by_date=${sorting}` : ''}`
     + `${ocid ? `&ocid=${ocid}` : ''}`
   );
 

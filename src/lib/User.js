@@ -52,7 +52,7 @@ export const findUserById = R.partial(Db.findById, [User]);
 export const findOneUser = R.partial(Db.findOne, [User]);
 
 export const findUsers = R.partial(Db.find, [User, {
-  _id: 1, username: 1, profile_img: 1, email: 1, type: 1,
+  _id: 1, username: 1, profile_img: 1, email: 1, type: 1, requests: 1,
 }]);
 
 export const updateUser = R.partial(Db.update, [User]);

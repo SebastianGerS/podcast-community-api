@@ -19,10 +19,12 @@ export default {
         return res.status(404).json({ error: response });
       }
     } else {
-      const { term, offset } = req.query;
-      const query = {
-        $or: [{ email: new RegExp(term, 'i') }, { username: new RegExp(term, 'i') }],
-      };
+      const { term, offset, filters } = req.query;
+
+      const decodedFilters = filters ? JSON.parse((decodeURIComponent(filters))) : { };
+
+      const query = decodedFilters.field ? { [`${decodedFilters.field}`]: new RegExp(term, 'i') }
+        : { $or: [{ email: new RegExp(term, 'i') }, { username: new RegExp(term, 'i') }] };
       const limit = 10;
 
       const skip = +offset;

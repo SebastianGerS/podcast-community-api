@@ -51,7 +51,7 @@ export async function searchListenNotes(query) {
   const listenNotesQuery = (
     `?q=${escapedTerm}&type=${type}&offset=${offset}`
     + `${genreIds ? `&genre_ids=${genreIds}` : ''}`
-    + `${field ? `&field=${field}` : ''}`
+    + `${field ? `&only_in=${field}` : ''}`
     + `${language ? `&language=${language}` : ''}`
     + `${minLength ? `&len_min=${minLength}` : ''}`
     + `${maxLength ? `&len_max=${maxLength}` : ''}`

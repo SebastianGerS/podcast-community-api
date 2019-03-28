@@ -35,6 +35,7 @@
   },
   "scripts": {
     "start": "nodemon --exec babel-node src/server.js",
+    "start:prod": "node ./dist/server.js",
     "test": "mocha --require babel-core/register src/Tests/**/*.spec.js",
     "pretty": "eslint --fix",
     "precommit": "lint-staged",

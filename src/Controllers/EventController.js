@@ -111,6 +111,7 @@ export default {
       } else if (response.event.type === 'confirm') {
         body.events = response.event._id;
         body.followers = target.item;
+        body.requests = target.item;
 
         const targetBody = {
           notifications: notification._id,

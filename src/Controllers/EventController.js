@@ -1,8 +1,6 @@
 
 import * as Event from '../lib/Event';
-
 import { createNotification } from '../lib/Notification';
-
 import { handleUserUpdate, findUserById } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
 
@@ -56,8 +54,21 @@ export default {
     if (target.kind === 'User') {
       if (type === 'follows') {
         const user = await findUserById(req.userId);
+        const targetUser = await findUserById(target.item);
 
-        eventBody.type = user.following.includes(target.item) ? 'unfollow' : 'follow';
+        let eventType;
+
+        if (user.following.includes(target.item)) {
+          eventType = 'unfollow';
+        } else if (targetUser.type === 'public') {
+          eventType = 'follow';
+        } else if (targetUser.requests.includes(req.userId)) {
+          eventType = 'unrequest';
+        } else {
+          eventType = 'request';
+        }
+
+        eventBody.type = eventType;
       } else if (type === 'restriction') {
         const user = await findUserById(req.userId);
 
@@ -87,7 +98,7 @@ export default {
         const updateTargetUser = await handleUserUpdate(target.item, targetBody);
 
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
-      } else if (response.event.type === 'request') {
+      } else if (response.event.type === 'request' || response.event.type === 'unrequest') {
         const targetBody = {
           notifications: notification._id,
           requests: agent.item,
@@ -100,6 +111,7 @@ export default {
       } else if (response.event.type === 'confirm') {
         body.events = response.event._id;
         body.followers = target.item;
+        body.requests = target.item;
 
         const targetBody = {
           notifications: notification._id,

@@ -12,7 +12,7 @@ export default {
     await Promise.all(user.subscriptions.map(async (subscription) => {
       const podcast = await fetchPodcastListenNotes(subscription);
 
-      if (podcast.error) return res.status(404).json({ error: podcast });
+      if (podcast.errmsg) return res.status(podcast.status).json({ error: podcast });
 
       subscriptions.push(podcast);
 
@@ -52,7 +52,14 @@ export default {
   },
   async getTopList(req, res) {
     const response = await getTopPodcasts().catch(error => error);
-    if (response.error) return res.status(404).json({ error: response });
+    if (response.errmsg) return res.status(response.status).json({ error: response });
     return res.status(200).json(response.channels);
+  },
+  async findOne(req, res) {
+    const response = await fetchPodcastListenNotes(req.params.podcastId);
+
+    if (response.errmsg) return res.status(response.status).json({ error: response });
+
+    return res.status(200).json(response);
   },
 };

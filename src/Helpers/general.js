@@ -8,3 +8,5 @@ export const updateArray = (list, value) => {
   }
   return addToArray(list, value);
 };
+
+export const removeHtmlFromString = string => (string.replace(/<(?:.|\n)*?>/gm, ''));

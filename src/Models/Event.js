@@ -6,7 +6,7 @@ const { Schema } = mongoose;
 const EventSchema = new Schema({
   type: {
     type: String,
-    enum: ['request', 'follow', 'unfollow', 'subscribe', 'unsubscribe', 'confirm', 'reject', 'recommend', 'episode', 'add', 'remove', 'block', 'unblock'],
+    enum: ['unrequest', 'request', 'follow', 'unfollow', 'subscribe', 'unsubscribe', 'confirm', 'reject', 'recommend', 'episode', 'add', 'remove', 'block', 'unblock'],
     required: true,
   },
   agent: [{

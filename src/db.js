@@ -9,8 +9,9 @@ if (!process.env.PORT) {
 const db = process.env.DB;
 const username = process.env.DB_USERNAME;
 const password = process.env.DB_PASSWORD;
+const dbConnectionString = `mongodb://${username}:${password}@${db}`;
 
-mongoose.connect(`mongodb://${username}:${password}@${db}`, { useNewUrlParser: true });
+mongoose.connect(dbConnectionString, { useNewUrlParser: true });
 
 mongoose.connection.on('error', (error) => {
   setTimeout(() => {

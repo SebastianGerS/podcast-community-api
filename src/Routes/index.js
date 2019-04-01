@@ -22,6 +22,7 @@ export default (app) => {
   app.get('/podcasts/:podcastId', C.PodcastController.findOne);
   app.get('/episodes/:episodeId', C.EpisodeController.findOne);
   app.post('/categories', verifyToken, C.CategoryController.create);
+  app.get('/notifications', verifyToken, C.NotificationController.findAllOnUser);
   app.put('/categories/:categoryId', verifyToken, C.CategoryController.update);
   app.delete('/categories/:categoryId', verifyToken, C.CategoryController.delete);
   app.get('/toplist', C.PodcastController.getTopList);

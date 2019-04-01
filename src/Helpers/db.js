@@ -41,20 +41,27 @@ export async function findOne(Model, input) {
   return response;
 }
 
-export async function find(Model, fields, input) {
+export async function find(Model, fields, input, fieldsToPopulate = []) {
   const { query, skip, limit } = input;
+
   const response = await new Promise((resolve, reject) => Model.find(query, fields)
     .skip(skip)
     .limit(limit)
+    .populate(fieldsToPopulate)
     .exec((error, output) => {
       if (error) {
         reject(error);
       }
-      if (output.length === 0) {
+      if (!output) {
+        const NotFoundError = new Error();
+        NotFoundError.errmsg = 'No results where found';
+        reject(NotFoundError);
+      } else if (output.length === 0) {
         const NotFoundError = new Error();
         NotFoundError.errmsg = 'No results where found';
         reject(NotFoundError);
       }
+
       resolve(output);
     }));
   return response;

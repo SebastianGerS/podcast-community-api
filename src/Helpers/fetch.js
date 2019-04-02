@@ -7,13 +7,12 @@ if (!process.env.JWT_SECRET) {
 
 export async function fetchFromListenNotes(path, query) {
   const headers = {
-    'X-Mashape-Host': process.env.X_MASHAPE_HOST,
-    'X-Mashape-key': process.env.X_MASHAPE_KEY,
+    'X-ListenAPI-key': process.env.X_LISTENAPI_KEY,
   };
 
   try {
     const response = await new Promise((resolve, reject) => {
-      Axios.get(`${process.env.X_MASHAPE_BASE_URL}/${path}${query}`, { method: 'GET', headers })
+      Axios.get(`${process.env.X_LISTENAPI_BASE_URL}/${path}${query}`, { method: 'GET', headers })
         .then((data) => {
           resolve(data.data);
         })

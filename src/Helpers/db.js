@@ -42,12 +42,15 @@ export async function findOne(Model, input) {
 }
 
 export async function find(Model, fields, input, fieldsToPopulate = []) {
-  const { query, skip, limit } = input;
+  const {
+    query, skip, limit, sort,
+  } = input;
 
   const response = await new Promise((resolve, reject) => Model.find(query, fields)
+    .sort(sort)
+    .populate(fieldsToPopulate)
     .skip(skip)
     .limit(limit)
-    .populate(fieldsToPopulate)
     .exec((error, output) => {
       if (error) {
         reject(error);

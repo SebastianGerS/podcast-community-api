@@ -6,6 +6,7 @@ const NotificationSchema = new Schema({
   user: { type: String, ref: 'User' },
   event: { type: Schema.Types.ObjectId, ref: 'Event' },
   observed: { type: Boolean, default: false },
+  date: { type: Date, default: Date.now },
 });
 
 mongoose.model('Notification', NotificationSchema);

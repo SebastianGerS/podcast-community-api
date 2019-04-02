@@ -10,10 +10,10 @@ export default {
     const query = { _id: { $in: user.notifications } };
     const skip = +offset;
     const limit = 10;
-    const sorting = '-event.date';
+    const sort = { date: -1 };
 
     const notificationsPart = await findNotifications({
-      query, skip, limit, sorting,
+      query, skip, limit, sort,
     }, [{ path: 'event', populate: { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] } }]).catch(error => error);
 
     if (notificationsPart.errmsg) return res.status(404).json({ error: notificationsPart });

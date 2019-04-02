@@ -19,8 +19,8 @@
 ## Setup
 
 This app is setup to run in a docker container initiated from the main repo
-but before you do that you need to run `cp .env.dist .env` and then set your JWT_SECRET (same as client) and add your X_MASHAPE_KEY
-instructions on how to get your own mashape key kan be found [her](https://docs.rapidapi.com/docs/keys) and you will also need an rapidapi [account](https://rapidapi.com/developers?utm_source=mashape&utm_medium=301).
+but before you do that you need to run `cp .env.dist .env` and then set your JWT_SECRET (same as client) and add your X_LISTENAPI_KEY
+instructions on how to get your own listennotes key kan be found [her](https://www.listennotes.com/api/).
 
 Once you have all this setup you go to the [main repo](https://github.com/SebastianGerS/podcast-community) and follow the instructions there.
 

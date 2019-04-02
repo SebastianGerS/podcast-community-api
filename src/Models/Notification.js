@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 
-
 const { Schema } = mongoose;
 
 const NotificationSchema = new Schema({

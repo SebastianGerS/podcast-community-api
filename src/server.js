@@ -1,8 +1,10 @@
 /* eslint-disable global-require, no-console, no-unused-vars */
 import express from 'express';
+import http from 'http';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import path from 'path';
+import sockets from 'socket.io';
 import db from './db';
 import routes from './Routes';
 
@@ -12,6 +14,8 @@ if (!process.env.PORT) {
 
 const port = process.env.PORT || 1337;
 const app = express();
+const server = http.Server(app);
+const io = sockets(server);
 
 const dir = path.join(__dirname, 'public/images');
 
@@ -22,6 +26,18 @@ app.use(cors(
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.listen(port, () => console.log(`express is now listening to port ${port}`));
+server.listen(port, () => console.log(`express is now listening to port ${port}`));
 
 routes(app);
+
+io.on('connection', (socket) => {
+  console.log('client is now connected');
+  socket.on('user/notification', (userId) => {
+    io.emit(`user/${userId}`, `id: ${userId}`);
+    console.log(`notification to ${userId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('client is now disconected');
+  });
+});

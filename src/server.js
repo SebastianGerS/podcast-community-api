@@ -28,16 +28,12 @@ app.use(bodyParser.json());
 
 server.listen(port, () => console.log(`express is now listening to port ${port}`));
 
-routes(app);
-
 io.on('connection', (socket) => {
   console.log('client is now connected');
-  socket.on('user/notification', (userId) => {
-    io.emit(`user/${userId}`, `id: ${userId}`);
-    console.log(`notification to ${userId}`);
-  });
 
   socket.on('disconnect', () => {
     console.log('client is now disconected');
   });
 });
+
+routes(app, io);

@@ -9,6 +9,21 @@ const NotificationSchema = new Schema({
   date: { type: Date, default: Date.now },
 });
 
+NotificationSchema.post('save', async (doc, next) => {
+  await doc.populate({ path: 'event', populate: { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] } }).execPopulate();
+  return next();
+});
+
+NotificationSchema.pre('find', function populate(next) {
+  this.populate({ path: 'event', populate: { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] } });
+  next();
+});
+
+NotificationSchema.pre('findOneAndUpdate', function populate(next) {
+  this.populate({ path: 'event', populate: { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] } });
+  next();
+});
+
 mongoose.model('Notification', NotificationSchema);
 
 export default mongoose.model('Notification');

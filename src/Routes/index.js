@@ -2,7 +2,7 @@
 import C from '../Controllers';
 import verifyToken from '../Middleware/verifyToken';
 
-export default (app) => {
+export default (app, io) => {
   app.get('/', (req, res) => res.redirect('https://documenter.getpostman.com/view/3252976/RWgnWzKb#intro'));
   app.get('/me', verifyToken, C.UserController.me);
   app.post('/users', C.UserController.create);
@@ -17,12 +17,13 @@ export default (app) => {
   app.get('/search', C.SearchController.find);
   app.get('/filters', C.SearchController.getFilters);
   app.get('/audio/:audioUrl', C.AudioController.stream);
-  app.post('/events', verifyToken, C.EventController.create);
+  app.post('/events', verifyToken, (req, res) => C.EventController.create(req, res, io));
   app.get('/users/:userId/subscriptions', verifyToken, C.PodcastController.find);
   app.get('/podcasts/:podcastId', C.PodcastController.findOne);
   app.get('/episodes/:episodeId', C.EpisodeController.findOne);
   app.post('/categories', verifyToken, C.CategoryController.create);
   app.get('/notifications', verifyToken, C.NotificationController.findAllOnUser);
+  app.put('/notifications/:notificationId', verifyToken, C.NotificationController.update);
   app.delete('/notifications/:notificationId', verifyToken, C.NotificationController.delete);
   app.put('/categories/:categoryId', verifyToken, C.CategoryController.update);
   app.delete('/categories/:categoryId', verifyToken, C.CategoryController.delete);

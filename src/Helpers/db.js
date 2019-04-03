@@ -41,14 +41,13 @@ export async function findOne(Model, input) {
   return response;
 }
 
-export async function find(Model, fields, input, fieldsToPopulate = []) {
+export async function find(Model, fields, input) {
   const {
     query, skip, limit, sort,
   } = input;
 
   const response = await new Promise((resolve, reject) => Model.find(query, fields)
     .sort(sort)
-    .populate(fieldsToPopulate)
     .skip(skip)
     .limit(limit)
     .exec((error, output) => {
@@ -89,7 +88,7 @@ export async function update(Model, _id, input) {
 export async function findAndUpdate(Model, _id, input) {
   const response = await new Promise(
 
-    (resolve, reject) => Model.findOneAndUpdate({ _id }, input, (error, output) => {
+    (resolve, reject) => Model.findOneAndUpdate({ _id }, input, { new: true }, (error, output) => {
       if (error) reject(error);
       if (!output) {
         const NotFoundError = new Error();

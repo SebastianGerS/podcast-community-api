@@ -1,4 +1,4 @@
-import { findNotifications, deleteNotification } from '../lib/Notification';
+import { findNotifications, deleteNotification, updateNotification } from '../lib/Notification';
 import { findUserById, handleUserUpdate } from '../lib/User';
 
 export default {
@@ -14,7 +14,7 @@ export default {
 
     const notificationsPart = await findNotifications({
       query, skip, limit, sort,
-    }, [{ path: 'event', populate: { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] } }]).catch(error => error);
+    }).catch(error => error);
 
     if (notificationsPart.errmsg) return res.status(404).json({ error: notificationsPart });
 
@@ -28,12 +28,20 @@ export default {
 
     const morePages = total - skip !== count;
 
+    const numberOfUnobserved = notificationsPart.reduce(
+      (unobservedCount, notification) => (
+        notification.observed === false ? unobservedCount + 1 : unobservedCount
+      ),
+      0,
+    );
+
     const response = {
       morePages,
       next_offset: skip + limit,
       count,
       results: notificationsPart,
       total,
+      numberOfUnobserved,
     };
 
     return res.status(200).json(response);
@@ -62,9 +70,31 @@ export default {
       }
     } else {
       status = 401;
-      response.info = 'You are not authorized to delete this notification';
+      response.error = { errmsg: 'You are not authorized to delete this notification' };
     }
 
+    return res.status(status).json(response);
+  },
+  async update(req, res) {
+    const response = {};
+    let status;
+    const { notificationId } = req.params;
+
+    const user = await findUserById(req.userId).catch(error => error);
+
+    if (user.errmsg) return res.status(404).json({ error: user });
+
+    if (user.notifications.map(notification => notification.toString()).includes(notificationId)) {
+      const input = { observed: true };
+      const notification = await updateNotification(notificationId, input).catch(error => error);
+
+      if (notification.errmsg) return res.status(404).json({ error: notification });
+      status = 200;
+      response.notification = notification;
+    } else {
+      status = 401;
+      response.error = { errmsg: 'You are not authorized to update this notification' };
+    }
     return res.status(status).json(response);
   },
 };

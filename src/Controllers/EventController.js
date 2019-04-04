@@ -97,7 +97,7 @@ export default {
 
         const targetBody = {
           followers: agent.item,
-          event: response.event._id,
+          events: response.event._id,
         };
 
         if (notificationId) {
@@ -110,7 +110,7 @@ export default {
       } else if (response.event.type === 'request' || response.event.type === 'unrequest') {
         const targetBody = {
           requests: agent.item,
-          event: response.event._id,
+          events: response.event._id,
         };
 
         if (notificationId) {
@@ -127,7 +127,7 @@ export default {
 
         const targetBody = {
           following: agent.item,
-          event: response.event._id,
+          events: response.event._id,
         };
 
         if (notificationId) {
@@ -149,14 +149,14 @@ export default {
 
         const targetBody = {
           following: agent.item,
-          event: response.event._id,
+          events: response.event._id,
         };
 
         const updateTargetUser = await handleUserUpdate(target.item, targetBody);
 
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'recommend') {
-        const targetBody = { event: response.event._id };
+        const targetBody = { events: response.event._id };
 
         if (notificationId) {
           targetBody.notifications = notificationId;

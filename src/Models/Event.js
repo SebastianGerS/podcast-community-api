@@ -9,18 +9,18 @@ const EventSchema = new Schema({
     enum: ['unrequest', 'request', 'follow', 'unfollow', 'subscribe', 'unsubscribe', 'confirm', 'reject', 'recommend', 'episode', 'add', 'remove', 'block', 'unblock'],
     required: true,
   },
-  agent: [{
+  agent: {
     kind: { type: String, enum: ['User', 'Podcast'] },
     item: { type: String, refPath: 'agent.kind' },
-  }],
-  target: [{
+  },
+  target: {
     kind: { type: String, enum: ['User', 'Podcast', 'Episode'] },
     item: { type: String, refPath: 'target.kind' },
-  }],
-  object: [{
+  },
+  object: {
     kind: { type: String, enum: ['Podcast', 'Episode'] },
     item: { type: String, refPath: 'object.kind' },
-  }],
+  },
   date: { type: Date, default: Date.now },
 });
 

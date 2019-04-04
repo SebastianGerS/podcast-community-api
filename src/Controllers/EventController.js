@@ -5,7 +5,7 @@ import { handleUserUpdate, findUserById } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
 
 export default {
-  async create(req, res) {
+  async create(req, res, io) {
     req.body.agent = { kind: 'User', item: req.userId };
     const {
       agent, target, object, type,
@@ -14,6 +14,8 @@ export default {
     const body = {};
     const eventBody = { agent, target, object };
     const response = {};
+    const notificationTypes = ['request', 'follow', 'confirm', 'recommend'];
+    let notificationId;
 
     if (target.kind === 'Podcast') {
       const user = await findUserById(req.userId);
@@ -80,10 +82,14 @@ export default {
 
       if (response.event.errmsg) return res.status(500).json({ error: response.event, message: 'Error creating the event' });
 
-      const notificationBody = { user: target.item, event: response.event._id };
-      const notification = await createNotification(notificationBody);
+      if (notificationTypes.includes(eventBody.type)) {
+        const notificationBody = { user: target.item, event: response.event._id };
+        const notification = await createNotification(notificationBody);
 
-      if (notification.errmsg) return res.status(500).json({ error: notification, message: 'Error creating the notification' });
+        if (notification.errmsg) return res.status(500).json({ error: notification, message: 'Error creating the notification' });
+        notificationId = notification._id;
+        io.emit(`user/${notification.user}/notification`, notification);
+      }
 
       if (response.event.type === 'follow' || response.event.type === 'unfollow') {
         body.events = response.event._id;
@@ -91,19 +97,25 @@ export default {
 
         const targetBody = {
           followers: agent.item,
-          notifications: notification._id,
           event: response.event._id,
         };
+
+        if (notificationId) {
+          targetBody.notifications = notificationId;
+        }
 
         const updateTargetUser = await handleUserUpdate(target.item, targetBody);
 
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'request' || response.event.type === 'unrequest') {
         const targetBody = {
-          notifications: notification._id,
           requests: agent.item,
           event: response.event._id,
         };
+
+        if (notificationId) {
+          targetBody.notifications = notificationId;
+        }
 
         const updateTargetUser = await handleUserUpdate(target.item, targetBody);
 
@@ -114,10 +126,13 @@ export default {
         body.requests = target.item;
 
         const targetBody = {
-          notifications: notification._id,
           following: agent.item,
           event: response.event._id,
         };
+
+        if (notificationId) {
+          targetBody.notifications = notificationId;
+        }
 
         const updateTargetUser = await handleUserUpdate(target.item, targetBody);
 
@@ -128,8 +143,24 @@ export default {
       } else if (response.event.type === 'block' || response.event.type === 'unblock') {
         body.events = response.event._id;
         body.restricted = target.item;
+      } else if (response.event.type === 'remove') {
+        body.events = response.event._id;
+        body.followers = target.item;
+
+        const targetBody = {
+          following: agent.item,
+          event: response.event._id,
+        };
+
+        const updateTargetUser = await handleUserUpdate(target.item, targetBody);
+
+        if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'recommend') {
-        const targetBody = { notifications: notification._id, event: response.event._id };
+        const targetBody = { event: response.event._id };
+
+        if (notificationId) {
+          targetBody.notifications = notificationId;
+        }
 
         const updateTargetUser = await handleUserUpdate(target.item, targetBody);
         body.events = response.event._id;

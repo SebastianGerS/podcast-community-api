@@ -143,6 +143,18 @@ export default {
       } else if (response.event.type === 'block' || response.event.type === 'unblock') {
         body.events = response.event._id;
         body.restricted = target.item;
+      } else if (response.event.type === 'remove') {
+        body.events = response.event._id;
+        body.followers = target.item;
+
+        const targetBody = {
+          following: agent.item,
+          event: response.event._id,
+        };
+
+        const updateTargetUser = await handleUserUpdate(target.item, targetBody);
+
+        if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'recommend') {
         const targetBody = { event: response.event._id };
 

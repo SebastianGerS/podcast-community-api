@@ -1,5 +1,6 @@
 import { findNotifications, deleteNotification, updateNotification } from '../lib/Notification';
 import { findUserById, handleUserUpdate } from '../lib/User';
+import { populateNotificationsWithListenNotesData } from '../Helpers/fetch';
 
 export default {
   async findAllOnUser(req, res) {
@@ -28,7 +29,11 @@ export default {
 
     const morePages = total - skip !== count;
 
-    const numberOfUnobserved = notificationsPart.reduce(
+    const notificationsWithListenNotesData = (
+      await populateNotificationsWithListenNotesData(notificationsPart)
+    );
+
+    const numberOfUnobserved = notificationsFull.reduce(
       (unobservedCount, notification) => (
         notification.observed === false ? unobservedCount + 1 : unobservedCount
       ),
@@ -39,7 +44,7 @@ export default {
       morePages,
       next_offset: skip + limit,
       count,
-      results: notificationsPart,
+      results: notificationsWithListenNotesData,
       total,
       numberOfUnobserved,
     };

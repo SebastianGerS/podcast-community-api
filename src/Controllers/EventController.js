@@ -1,8 +1,8 @@
-
 import * as Event from '../lib/Event';
 import { createNotification } from '../lib/Notification';
 import { handleUserUpdate, findUserById } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
+import { replaceObjectOnNotification } from '../Helpers/fetch';
 
 export default {
   async create(req, res, io) {
@@ -12,7 +12,7 @@ export default {
     } = req.body;
 
     const body = {};
-    const eventBody = { agent, target, object };
+    const eventBody = { agent, target, object: { item: object.item, kind: object.kind } };
     const response = {};
     const notificationTypes = ['request', 'follow', 'confirm', 'recommend'];
     let notificationId;
@@ -87,8 +87,12 @@ export default {
         const notification = await createNotification(notificationBody);
 
         if (notification.errmsg) return res.status(500).json({ error: notification, message: 'Error creating the notification' });
+
         notificationId = notification._id;
-        io.emit(`user/${notification.user}/notification`, notification);
+
+        const modifiedNotification = replaceObjectOnNotification(notification, object);
+
+        io.emit(`user/${notification.user}/notification`, modifiedNotification);
       }
 
       if (response.event.type === 'follow' || response.event.type === 'unfollow') {

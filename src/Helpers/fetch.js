@@ -79,3 +79,64 @@ export async function fetchEpisodeListenNotes(episodeId) {
 
   return response;
 }
+
+export function replaceObjectOnNotification(notification, object) {
+  return {
+    _id: notification._id,
+    user: notification.user,
+    event: {
+      type: notification.event.type,
+      agent: notification.event.agent,
+      target: notification.event.target,
+      object,
+      date: notification.event.date,
+    },
+    observed: notification.observed,
+    date: notification.date,
+  };
+}
+
+function extendObjectWithListenNotesItem(object, listenNotesItem) {
+  return {
+    item: object.item,
+    kind: object.kind,
+    image: listenNotesItem.image,
+    title: listenNotesItem.title,
+    podcast_title: listenNotesItem.podcast ? listenNotesItem.podcast.title : undefined,
+  };
+}
+
+export async function populateNotificationsWithListenNotesData(notifications) {
+  const response = await Promise.all(notifications.map(
+    async (notification) => {
+      let notificationCopy = notification;
+      let object;
+      let fetchedItem;
+
+      const { kind, item } = notification.event.object;
+
+      switch (kind) {
+        case 'Episode':
+          fetchedItem = await fetchEpisodeListenNotes(item).catch(error => error);
+
+          object = extendObjectWithListenNotesItem(notification.event.object, fetchedItem);
+
+          notificationCopy = replaceObjectOnNotification(notification, object);
+          break;
+        case 'Podcast':
+          fetchedItem = await fetchPodcastListenNotes(item).catch(error => error);
+
+          object = extendObjectWithListenNotesItem(notification.event.object, fetchedItem);
+
+          notificationCopy = replaceObjectOnNotification(notification, object);
+          break;
+        default:
+          break;
+      }
+
+      return notificationCopy;
+    },
+  ));
+
+  return response;
+}

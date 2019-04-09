@@ -1,6 +1,8 @@
 import { findUserById } from '../lib/User';
 import { findCategoryById } from '../lib/Category';
 import { fetchPodcastListenNotes, getTopPodcasts } from '../Helpers/fetch';
+import { findOrCreatePodcast } from '../lib/Podcast';
+import { findEpisodes } from '../lib/Episode';
 
 export default {
   async find(req, res) {
@@ -56,9 +58,31 @@ export default {
     return res.status(200).json(response.channels);
   },
   async findOne(req, res) {
-    const response = await fetchPodcastListenNotes(req.params.podcastId);
+    const { podcastId } = req.params;
 
-    if (response.errmsg) return res.status(response.status).json({ error: response });
+    const response = {};
+
+    const lnPodcast = await fetchPodcastListenNotes(podcastId);
+
+    if (lnPodcast.errmsg) return res.status(lnPodcast.status).json({ error: lnPodcast });
+
+    response.podcast = lnPodcast;
+
+    const podcast = await findOrCreatePodcast({ _id: podcastId }).catch(error => error);
+    console.log(podcast);
+    if (podcast.errmsg) return res.status(podcast.status).json({ error: podcast });
+
+    const query = { query: { podcast: podcastId } };
+
+    const episodes = await findEpisodes(query).catch(error => error);
+
+    const episodeRatings = Array.isArray(episodes)
+      ? episodes.map(episode => (
+        { episodeId: episode.id, rating: episode.avrageRating }
+      ))
+      : [];
+
+    response.ratings = { avrageRating: podcast.avrageRating, episodeRatings };
 
     return res.status(200).json(response);
   },

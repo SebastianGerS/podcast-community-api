@@ -3,7 +3,7 @@ import {
   findOneRating, updateRating, createRating,
 } from '../lib/Rating';
 import { handlePodcastUpdate, findOrCreatePodcast } from '../lib/Podcast';
-import { handleEpisodeUpdate, findOrCreateEpisode, findEpisodes } from '../lib/Episode';
+import { handleEpisodeUpdate, findOrCreateEpisode } from '../lib/Episode';
 import { handleMetaUserUpdate } from '../lib/MetaUser';
 import { emitUpdatedRatings } from '../Helpers/socket';
 
@@ -62,38 +62,5 @@ export default {
     emitUpdatedRatings(io, podcastId, podcastEpisodes, episodeId);
 
     return res.status(200).json({ info: 'Your rating has been registerd' });
-  },
-  async podcastRating(req, res) {
-    const podcast = await findOrCreatePodcast({ _id: req.params.podcastId }).catch(error => error);
-
-    if (podcast.errmsg) return res.status(404).json({ error: podcast });
-
-    return res.status(200).json({ rating: podcast.avrageRating });
-  },
-  async episodeRating(req, res) {
-    const { episodeId, podcastId } = req.params;
-
-    const episode = await findOrCreateEpisode({ _id: episodeId, podcast: podcastId });
-
-    if (episode.errmsg) return res.status(404).json({ error: episode });
-
-    return res.status(200).json({ rating: episode.avrageRating });
-  },
-  async podcastRatings(req, res) {
-    const { podcastId } = req.params;
-
-    const podcast = await findOrCreatePodcast({ _id: podcastId }).catch(error => error);
-
-    const query = { query: { podcast: podcastId } };
-
-    const episodes = await findEpisodes(query).catch(error => error);
-
-    const episodeRatings = Array.isArray(episodes)
-      ? episodes.map(episode => (
-        { episodeId: episode.id, rating: episode.avrageRating }
-      ))
-      : [];
-
-    return res.status(200).json({ avrageRating: podcast.avrageRating, episodeRatings });
   },
 };

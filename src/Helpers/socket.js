@@ -19,6 +19,8 @@ export async function emitUpdatedRatings(io, podcastId, podcastEpisodes, episode
 
   io.emit(`episodes/${episodeId}/rating`, avrageEpisodeRating);
 
+  io.emit(`search/episodes/${episodeId}/rating`, { episodeId, rating: avrageEpisodeRating });
+
   const query = { query: { episode: { $in: podcastEpisodes } } };
 
   const podcastRatings = await findRatings(query).catch(error => error);
@@ -35,6 +37,7 @@ export async function emitUpdatedRatings(io, podcastId, podcastEpisodes, episode
   if (updatedPodcast.errmsg) return { error: updatedPodcast };
 
   io.emit(`podcasts/${podcastId}/rating`, { avrageRating: avragePodcastRating, episodeRating: { episodeId, rating: avrageEpisodeRating } });
+  io.emit(`search/podcasts/${podcastId}/rating`, { podcastId, rating: avragePodcastRating });
 
   return { info: 'success' };
 }

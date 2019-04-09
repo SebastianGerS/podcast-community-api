@@ -34,6 +34,10 @@ export async function findOne(Model, input) {
         const NotFoundError = new Error();
         NotFoundError.errmsg = 'Not found';
         reject(NotFoundError);
+      } else if (output.length === 0) {
+        const NotFoundError = new Error();
+        NotFoundError.errmsg = 'Not found';
+        reject(NotFoundError);
       }
       resolve(output);
     }),
@@ -87,7 +91,6 @@ export async function update(Model, _id, input) {
 
 export async function findAndUpdate(Model, _id, input) {
   const response = await new Promise(
-
     (resolve, reject) => Model.findOneAndUpdate({ _id }, input, { new: true }, (error, output) => {
       if (error) reject(error);
       if (!output) {
@@ -138,4 +141,13 @@ export async function hashPassword(password) {
   const newSalt = await bcrypt.genSalt(rounds).catch(error => error);
   const passwordHash = await bcrypt.hash(password, newSalt).catch(error => error);
   return passwordHash;
+}
+
+export async function findOrCreate(Model, input) {
+  const item = await findOne(Model, input).catch(error => error);
+
+  if (item.errmsg === 'Not found') {
+    return create(Model, input).catch(error => error);
+  }
+  return item;
 }

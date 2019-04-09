@@ -73,7 +73,7 @@ export default {
   async episodeRating(req, res) {
     const { episodeId, podcastId } = req.params;
 
-    const episode = findOrCreateEpisode({ _id: episodeId, podcast: podcastId });
+    const episode = await findOrCreateEpisode({ _id: episodeId, podcast: podcastId });
 
     if (episode.errmsg) return res.status(404).json({ error: episode });
 

@@ -61,6 +61,6 @@ export default {
 
     emitUpdatedRatings(io, podcastId, podcastEpisodes, episodeId);
 
-    return res.status(200).json({ info: 'Your rating has been registerd' });
+    return res.status(200).json({ info: 'Your rating has been registered' });
   },
 };

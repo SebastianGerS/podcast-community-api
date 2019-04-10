@@ -3,6 +3,7 @@ import { createNotification } from '../lib/Notification';
 import { handleUserUpdate, findUserById } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
 import { replaceObjectOnNotification } from '../Helpers/fetch';
+import { findOrCreatePodcast } from '../lib/Podcast';
 
 export default {
   async create(req, res, io) {
@@ -20,6 +21,7 @@ export default {
     if (target.kind === 'Podcast') {
       const user = await findUserById(req.userId);
       eventBody.type = user.subscriptions.includes(target.item) ? 'unsubscribe' : 'subscribe';
+
       if (eventBody.type === 'unsubscribe') {
         await Promise.all(user.categories.map(async (categoryId) => {
           const category = await findCategoryById(categoryId).catch(error => error);
@@ -33,6 +35,10 @@ export default {
           }
           return category;
         }));
+      } else {
+        const podcast = findOrCreatePodcast({ _id: target.item }).catch(error => error);
+
+        if (podcast.errmsg) return res.status(409).json({ error: podcast });
       }
       response.event = await Event.createEvent(eventBody);
 

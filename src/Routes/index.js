@@ -20,6 +20,7 @@ export default (app, io) => {
   app.post('/events', verifyToken, (req, res) => C.EventController.create(req, res, io));
   app.get('/users/:userId/subscriptions', verifyToken, C.PodcastController.find);
   app.get('/podcasts/:podcastId', C.PodcastController.findOne);
+  app.post('/podcasts/:podcastId/rating', verifyToken, (req, res) => C.RatingController.create(req, res, io));
   app.get('/episodes/:episodeId', C.EpisodeController.findOne);
   app.post('/categories', verifyToken, C.CategoryController.create);
   app.get('/notifications', verifyToken, C.NotificationController.findAllOnUser);

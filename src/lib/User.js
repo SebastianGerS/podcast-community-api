@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import JWT from 'jsonwebtoken';
 import R from 'ramda';
 import User from '../Models/User';
-import MetaUser from '../Models/MetaUser';
 import * as Db from '../Helpers/db';
 
 if (!process.env.JWT_SECRET) {
@@ -44,8 +43,6 @@ export function filterFields(user) {
   };
 }
 export const createUser = R.partial(Db.create, [User]);
-
-export const createMetaUser = R.partial(Db.create, [MetaUser]);
 
 export const findUserById = R.partial(Db.findById, [User]);
 

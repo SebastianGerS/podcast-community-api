@@ -6,6 +6,7 @@ import PodcastController from './PodcastController';
 import CategoryController from './CategoryController';
 import EpisodeController from './EpisodeController';
 import NotificationController from './NotificationController';
+import RatingController from './RatingController';
 
 export default {
   UserController,
@@ -16,4 +17,5 @@ export default {
   CategoryController,
   EpisodeController,
   NotificationController,
+  RatingController,
 };

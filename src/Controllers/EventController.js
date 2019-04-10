@@ -1,9 +1,9 @@
-import * as Event from '../lib/Event';
-import { createNotification } from '../lib/Notification';
+import { findEvents, createEvent, formatPopulatedEvent } from '../lib/Event';
+import { createNotification, formatNotification } from '../lib/Notification';
 import { handleUserUpdate, findUserById } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
-import { replaceObjectOnNotification } from '../Helpers/fetch';
 import { findOrCreatePodcast } from '../lib/Podcast';
+import { populateEventWithListenNotesData } from '../Helpers/fetch';
 
 export default {
   async create(req, res, io) {
@@ -40,7 +40,7 @@ export default {
 
         if (podcast.errmsg) return res.status(409).json({ error: podcast });
       }
-      response.event = await Event.createEvent(eventBody);
+      response.event = await createEvent(eventBody);
 
       if (response.event.errmsg) return res.status(500).json({ error: response.event, message: 'Error creating the event' });
 
@@ -52,7 +52,7 @@ export default {
 
       eventBody.type = user.listenlist.includes(target.item) ? 'remove' : 'add';
 
-      response.event = await Event.createEvent(eventBody);
+      response.event = await createEvent(eventBody);
 
       if (response.event.errmsg) return res.status(500).json({ error: response.event, message: 'Error creating the event' });
 
@@ -84,7 +84,7 @@ export default {
       } else {
         eventBody.type = type;
       }
-      response.event = await Event.createEvent(eventBody);
+      response.event = await createEvent(eventBody);
 
       if (response.event.errmsg) return res.status(500).json({ error: response.event, message: 'Error creating the event' });
 
@@ -96,7 +96,9 @@ export default {
 
         notificationId = notification._id;
 
-        const modifiedNotification = replaceObjectOnNotification(notification, object);
+        const populatedEvent = formatPopulatedEvent(notification.event);
+
+        const modifiedNotification = formatNotification(notification, populatedEvent);
 
         io.emit(`user/${notification.user}/notification`, modifiedNotification);
       }
@@ -182,5 +184,29 @@ export default {
     if (updateUser.errmsg) return res.status(500).json({ error: updateUser, message: 'Error updating the user' });
 
     return res.status(200).json(response);
+  },
+  async followingEvents(req, res) {
+    const { userId } = req;
+    const { offset } = req.query;
+
+    const user = await findUserById(userId).catch(error => error);
+
+    if (user.errmsg) return res.status(404).json({ error: user });
+
+    const eventTypes = ['confirm', 'follow', 'recommend', 'subscribe'];
+
+    const query = { 'agent.item': { $in: user.following }, 'target.item': { $ne: userId }, type: { $in: eventTypes } };
+    const skip = +offset;
+    const limit = 10;
+    const sort = { date: -1 };
+
+    const events = await findEvents({
+      query, skip, limit, sort,
+    }).catch(error => error);
+
+    if (events.errmsg) return res.status(404).json({ error: events });
+
+    const formatedEvents = populateEventWithListenNotesData(events);
+    return res.status(200).json({ events: formatedEvents });
   },
 };

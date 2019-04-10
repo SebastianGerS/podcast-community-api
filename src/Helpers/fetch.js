@@ -1,5 +1,7 @@
 /* eslint-disable global-require */
 import Axios from 'axios';
+import { extendObjectWithListenNotesItem, formatPopulatedEvent } from '../lib/Event';
+import { formatNotification } from '../lib/Notification';
 
 if (!process.env.JWT_SECRET) {
   require('dotenv').config();
@@ -13,6 +15,31 @@ export async function fetchFromListenNotes(path, query) {
   try {
     const response = await new Promise((resolve, reject) => {
       Axios.get(`${process.env.X_LISTENAPI_BASE_URL}/${path}${query}`, { method: 'GET', headers })
+        .then((data) => {
+          resolve(data.data);
+        })
+        .then(data => resolve(data)).catch(error => reject(error));
+    });
+
+    return response;
+  } catch (error) {
+    const listenNotesError = new Error();
+
+    listenNotesError.errmsg = error.response ? error.response.statusText : 'Unknow error occured when trying send a request to the ListenNotes api';
+    listenNotesError.status = 404;
+
+    return listenNotesError;
+  }
+}
+
+export async function postToListenNotes(path, body) {
+  const headers = {
+    'X-ListenAPI-key': process.env.X_LISTENAPI_KEY,
+  };
+
+  try {
+    const response = await new Promise((resolve, reject) => {
+      Axios.post(`${process.env.X_LISTENAPI_BASE_URL}/${path}`, body, { method: 'POST', headers })
         .then((data) => {
           resolve(data.data);
         })
@@ -79,31 +106,16 @@ export async function fetchEpisodeListenNotes(episodeId) {
 
   return response;
 }
+export async function fetchPodcastsListenNotes(podcastIds) {
+  const response = await postToListenNotes('podcasts/', podcastIds);
 
-export function replaceObjectOnNotification(notification, object) {
-  return {
-    _id: notification._id,
-    user: notification.user,
-    event: {
-      type: notification.event.type,
-      agent: notification.event.agent,
-      target: notification.event.target,
-      object,
-      date: notification.event.date,
-    },
-    observed: notification.observed,
-    date: notification.date,
-  };
+  return response;
 }
 
-function extendObjectWithListenNotesItem(object, listenNotesItem) {
-  return {
-    item: object.item,
-    kind: object.kind,
-    image: listenNotesItem.image,
-    title: listenNotesItem.title,
-    podcast_title: listenNotesItem.podcast ? listenNotesItem.podcast.title : undefined,
-  };
+export async function fetchEpisodesListenNotes(episodeIds) {
+  const response = await postToListenNotes('episodes/', episodeIds);
+
+  return response;
 }
 
 export async function populateNotificationsWithListenNotesData(notifications) {
@@ -111,6 +123,7 @@ export async function populateNotificationsWithListenNotesData(notifications) {
     async (notification) => {
       let notificationCopy = notification;
       let object;
+      let event;
       let fetchedItem;
 
       const { kind, item } = notification.event.object;
@@ -121,16 +134,22 @@ export async function populateNotificationsWithListenNotesData(notifications) {
 
           object = extendObjectWithListenNotesItem(notification.event.object, fetchedItem);
 
-          notificationCopy = replaceObjectOnNotification(notification, object);
+          event = formatPopulatedEvent(notification.event, object);
+
+          notificationCopy = formatNotification(notification, event);
           break;
         case 'Podcast':
           fetchedItem = await fetchPodcastListenNotes(item).catch(error => error);
 
           object = extendObjectWithListenNotesItem(notification.event.object, fetchedItem);
 
-          notificationCopy = replaceObjectOnNotification(notification, object);
+          event = formatPopulatedEvent(notification.event, object);
+
+          notificationCopy = formatNotification(notification, event);
           break;
         default:
+          event = formatPopulatedEvent(notification.event);
+          notificationCopy = formatNotification(notification, event);
           break;
       }
 
@@ -139,4 +158,52 @@ export async function populateNotificationsWithListenNotesData(notifications) {
   ));
 
   return response;
+}
+
+export async function populateEventWithListenNotesData(events) {
+  const eventsWithEpisodeObject = events.filter(event => event.object.kind === 'Episode');
+
+  const eventsWithPodcastObject = events.filter(event => event.object.kind === 'Podcast');
+
+  const eventsWithoutObject = events.filter(event => !event.object.kind);
+  const eventGroups = [eventsWithEpisodeObject, eventsWithPodcastObject];
+
+  const formatedEventGroups = await Promise.all(eventGroups.map(
+    async (eventGroup) => {
+      const { kind } = eventGroup[0].object;
+      const objectIds = eventGroup.reduce((ids, event, index) => {
+        if (index === 0) {
+          return event.object.item;
+        }
+        return `${ids}, ${event.object.item}`;
+      });
+      let fetchedItems;
+
+      switch (kind) {
+        case 'Episode':
+          fetchedItems = await fetchEpisodesListenNotes(`ids=${objectIds}`).catch(error => error);
+
+          // object = extendObjectWithListenNotesItem(event.object, fetchedItem);
+
+          // eventCopy = formatPopulatedEvent(event, object);
+
+          break;
+        case 'Podcast':
+          fetchedItems = await fetchPodcastsListenNotes(`ids=${objectIds}`).catch(error => error);
+
+          // object = extendObjectWithListenNotesItem(event.object, fetchedItem);
+
+          // eventCopy = formatPopulatedEvent(event, object);
+
+          break;
+        default:
+          break;
+      }
+      return fetchedItems;
+    },
+  ));
+
+  formatedEventGroups.push(eventsWithoutObject.map(event => formatPopulatedEvent(event)));
+
+  return formatedEventGroups;
 }

@@ -69,7 +69,7 @@ export default {
     response.podcast = lnPodcast;
 
     const podcast = await findOrCreatePodcast({ _id: podcastId }).catch(error => error);
-    console.log(podcast);
+
     if (podcast.errmsg) return res.status(podcast.status).json({ error: podcast });
 
     const query = { query: { podcast: podcastId } };

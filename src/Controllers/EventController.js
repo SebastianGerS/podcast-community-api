@@ -206,7 +206,8 @@ export default {
 
     if (events.errmsg) return res.status(404).json({ error: events });
 
-    const formatedEvents = populateEventWithListenNotesData(events);
+    const formatedEvents = await populateEventWithListenNotesData(events);
+
     return res.status(200).json({ events: formatedEvents });
   },
 };

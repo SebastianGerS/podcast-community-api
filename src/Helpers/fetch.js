@@ -1,6 +1,8 @@
 /* eslint-disable global-require */
 import Axios from 'axios';
-import { extendObjectWithListenNotesItem, formatPopulatedEvent } from '../lib/Event';
+import {
+  extendObjectWithListenNotesItem, formatPopulatedEvent, formatPopulatedUser, extractItemIds,
+} from '../lib/Event';
 import { formatNotification } from '../lib/Notification';
 
 if (!process.env.JWT_SECRET) {
@@ -107,13 +109,13 @@ export async function fetchEpisodeListenNotes(episodeId) {
   return response;
 }
 export async function fetchPodcastsListenNotes(podcastIds) {
-  const response = await postToListenNotes('podcasts/', podcastIds);
+  const response = await postToListenNotes('podcasts/', podcastIds).then(res => res.podcasts);
 
   return response;
 }
 
 export async function fetchEpisodesListenNotes(episodeIds) {
-  const response = await postToListenNotes('episodes/', episodeIds);
+  const response = await postToListenNotes('episodes/', episodeIds).then(res => res.episodes);
 
   return response;
 }
@@ -160,50 +162,78 @@ export async function populateNotificationsWithListenNotesData(notifications) {
   return response;
 }
 
-export async function populateEventWithListenNotesData(events) {
-  const eventsWithEpisodeObject = events.filter(event => event.object.kind === 'Episode');
+function mergeEventWithListenNotesData(eventsWithItems, fetchedItems, itemType) {
+  const formatedItemEvents = eventsWithItems.map((event) => {
+    const eventCopy = JSON.parse(JSON.stringify(event));
+    const setKeys = [];
 
-  const eventsWithPodcastObject = events.filter(event => event.object.kind === 'Podcast');
-
-  const eventsWithoutObject = events.filter(event => !event.object.kind);
-  const eventGroups = [eventsWithEpisodeObject, eventsWithPodcastObject];
-
-  const formatedEventGroups = await Promise.all(eventGroups.map(
-    async (eventGroup) => {
-      const { kind } = eventGroup[0].object;
-      const objectIds = eventGroup.reduce((ids, event, index) => {
-        if (index === 0) {
-          return event.object.item;
+    fetchedItems.map((item) => {
+      if (event.object) {
+        if (item.id === event.object.item) {
+          eventCopy.object = extendObjectWithListenNotesItem(event.object, item);
         }
-        return `${ids}, ${event.object.item}`;
-      });
-      let fetchedItems;
-
-      switch (kind) {
-        case 'Episode':
-          fetchedItems = await fetchEpisodesListenNotes(`ids=${objectIds}`).catch(error => error);
-
-          // object = extendObjectWithListenNotesItem(event.object, fetchedItem);
-
-          // eventCopy = formatPopulatedEvent(event, object);
-
-          break;
-        case 'Podcast':
-          fetchedItems = await fetchPodcastsListenNotes(`ids=${objectIds}`).catch(error => error);
-
-          // object = extendObjectWithListenNotesItem(event.object, fetchedItem);
-
-          // eventCopy = formatPopulatedEvent(event, object);
-
-          break;
-        default:
-          break;
       }
-      return fetchedItems;
-    },
-  ));
 
-  formatedEventGroups.push(eventsWithoutObject.map(event => formatPopulatedEvent(event)));
+      if (event.target.kind === itemType) {
+        if (item.id === event.target.item) {
+          setKeys.push('target');
+          eventCopy.target = extendObjectWithListenNotesItem(event.target, item);
+        }
+      }
 
-  return formatedEventGroups;
+      if (event.agent.kind === itemType) {
+        if (item.id === event.agent.item._id) {
+          setKeys.push('agent');
+          eventCopy.agent = extendObjectWithListenNotesItem(event.agent, item);
+        }
+      }
+
+      return item;
+    });
+
+    if (!setKeys.includes('agent')) {
+      eventCopy.agent = formatPopulatedUser(eventCopy.agent);
+    }
+
+    if (!setKeys.includes('target')) {
+      eventCopy.target = formatPopulatedUser(eventCopy.target);
+    }
+
+    return eventCopy;
+  });
+
+  return formatedItemEvents;
+}
+
+export async function formatEvents(events) {
+  const eventsWithEpisode = events.filter(event => event.object.kind === 'Episode' || event.target.kind === 'Episode');
+
+  const eventsWithPodcast = events.filter(event => event.object.kind === 'Podcast' || event.target.kind === 'Podcast' || event.agent.kind === 'Podcast');
+
+  const eventsWithoutObject = events.filter(event => !event.object.kind && event.agent.kind === 'User' && event.target.kind === 'User');
+  const formatedEvents = [];
+
+  if (eventsWithEpisode.length > 0) {
+    const stringifiedIds = extractItemIds(eventsWithEpisode, 'Episode');
+
+    const fetchedItems = await fetchEpisodesListenNotes(`ids=${stringifiedIds}`).catch(error => error);
+
+    const formatedEpisodeEvents = mergeEventWithListenNotesData(eventsWithEpisode, fetchedItems, 'Episode');
+
+    formatedEvents.push(...formatedEpisodeEvents);
+  }
+
+  if (eventsWithPodcast.length > 0) {
+    const stringifiedIds = extractItemIds(eventsWithEpisode, 'Podcast');
+
+    const fetchedItems = await fetchPodcastsListenNotes(`ids=${stringifiedIds}`).catch(error => error);
+
+    const formatedPodcastEvents = mergeEventWithListenNotesData(eventsWithEpisode, fetchedItems, 'Podcast');
+
+    formatedEvents.push(...formatedPodcastEvents);
+  }
+
+  formatedEvents.push(...eventsWithoutObject.map(event => formatPopulatedEvent(event)));
+
+  return formatedEvents;
 }

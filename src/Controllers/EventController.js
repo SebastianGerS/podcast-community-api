@@ -1,5 +1,5 @@
 import { findEvents, createEvent, formatPopulatedEvent } from '../lib/Event';
-import { createNotification, formatNotification } from '../lib/Notification';
+import { createNotification } from '../lib/Notification';
 import { handleUserUpdate, findUserById } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
 import { findOrCreatePodcast } from '../lib/Podcast';
@@ -13,7 +13,7 @@ export default {
     } = req.body;
 
     const body = {};
-    const eventBody = { agent, target, object: { item: object.item, kind: object.kind } };
+    const eventBody = { agent, target, object: { item: object._id, kind: object.kind } };
     const response = {};
     const notificationTypes = ['request', 'follow', 'confirm', 'recommend'];
     let notificationId;
@@ -95,12 +95,11 @@ export default {
         if (notification.errmsg) return res.status(500).json({ error: notification, message: 'Error creating the notification' });
 
         notificationId = notification._id;
+        const notificationCopy = JSON.parse(JSON.stringify(notification));
 
-        const populatedEvent = formatPopulatedEvent(notification.event);
+        notificationCopy.event = formatPopulatedEvent(notification.event, object);
 
-        const modifiedNotification = formatNotification(notification, populatedEvent);
-
-        io.emit(`user/${notification.user}/notification`, modifiedNotification);
+        io.emit(`user/${notification.user}/notification`, notificationCopy);
       }
 
       if (response.event.type === 'follow' || response.event.type === 'unfollow') {

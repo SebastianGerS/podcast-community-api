@@ -11,32 +11,37 @@ export const findEvents = R.partial(find, [Event, {
 }]);
 
 export function formatPopulatedEvent(event, object = event.object) {
+  const eventCopy = JSON.parse(JSON.stringify(event));
+  const objectCopy = JSON.parse(JSON.stringify(object));
+
   return {
-    _id: event._id,
-    type: event.type,
+    _id: eventCopy._id,
+    type: eventCopy.type,
     agent: {
-      _id: event.agent.item._id,
-      name: event.agent.item.username,
-      image: event.agent.item.profile_img.thumb,
-      kind: event.agent.kind,
+      _id: eventCopy.agent.item._id,
+      name: eventCopy.agent.item.username,
+      image: eventCopy.agent.item.profile_img.thumb,
+      kind: eventCopy.agent.kind,
     },
     target: {
-      _id: event.target.item._id,
-      name: event.target.item.username,
-      image: event.target.item.profile_img.thumb,
-      kind: event.target.kind,
+      _id: eventCopy.target.item._id,
+      name: eventCopy.target.item.username,
+      image: eventCopy.target.item.profile_img.thumb,
+      kind: eventCopy.target.kind,
     },
-    object,
-    date: event.date,
+    object: objectCopy,
+    date: eventCopy.date,
   };
 }
 
 export function formatPopulatedUser(user) {
+  const userCopy = JSON.parse(JSON.stringify(user));
+
   return {
-    _id: user.item._id,
-    name: user.item.username,
-    image: user.item.profile_img.thumb,
-    kind: user.kind,
+    _id: userCopy.item._id,
+    name: userCopy.item.username,
+    image: userCopy.item.profile_img.thumb,
+    kind: userCopy.kind,
   };
 }
 

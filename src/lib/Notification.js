@@ -15,13 +15,3 @@ export const findNotifications = R.partial(find, [Notification, {
 }]);
 export const deleteNotification = R.partial(deleteOne, [Notification]);
 export const updateNotification = R.partial(findAndUpdate, [Notification]);
-
-export function formatNotification(notification, event = notification.event) {
-  return {
-    _id: notification._id,
-    user: notification.user,
-    event,
-    observed: notification.observed,
-    date: notification.date,
-  };
-}

@@ -24,6 +24,16 @@ const EventSchema = new Schema({
   date: { type: Date, default: Date.now },
 });
 
+EventSchema.pre('find', function populate(next) {
+  this.populate(
+    [
+      { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] },
+      { path: 'target.item', select: ['profile_img.thumb', 'username', '_id'] },
+    ],
+  );
+  next();
+});
+
 mongoose.model('Event', EventSchema);
 
 export default mongoose.model('Event');

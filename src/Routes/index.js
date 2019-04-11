@@ -18,6 +18,7 @@ export default (app, io) => {
   app.get('/filters', C.SearchController.getFilters);
   app.get('/audio/:audioUrl', C.AudioController.stream);
   app.post('/events', verifyToken, (req, res) => C.EventController.create(req, res, io));
+  app.get('/events', verifyToken, C.EventController.followingEvents);
   app.get('/users/:userId/subscriptions', verifyToken, C.PodcastController.find);
   app.get('/podcasts/:podcastId', C.PodcastController.findOne);
   app.post('/podcasts/:podcastId/rating', verifyToken, (req, res) => C.RatingController.create(req, res, io));

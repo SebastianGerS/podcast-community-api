@@ -3,7 +3,7 @@ import { createNotification, formatNotification } from '../lib/Notification';
 import { handleUserUpdate, findUserById } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
 import { findOrCreatePodcast } from '../lib/Podcast';
-import { populateEventWithListenNotesData } from '../Helpers/fetch';
+import { formatEvents } from '../Helpers/fetch';
 
 export default {
   async create(req, res, io) {
@@ -206,7 +206,7 @@ export default {
 
     if (events.errmsg) return res.status(404).json({ error: events });
 
-    const formatedEvents = await populateEventWithListenNotesData(events);
+    const formatedEvents = await formatEvents(events);
 
     return res.status(200).json({ events: formatedEvents });
   },

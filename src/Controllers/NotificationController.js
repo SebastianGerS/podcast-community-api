@@ -93,7 +93,7 @@ export default {
 
       if (notification.errmsg) return res.status(404).json({ error: notification });
       status = 200;
-      response.notification = notification;
+      response.notificationId = notificationId;
     } else {
       status = 401;
       response.error = { errmsg: 'You are not authorized to update this notification' };

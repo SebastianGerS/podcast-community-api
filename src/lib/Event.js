@@ -45,6 +45,17 @@ export function formatPopulatedUser(user) {
   };
 }
 
+export function formatPopulatedRating(rating) {
+  if (rating.rating) return rating;
+  const ratingCopy = JSON.parse(JSON.stringify(rating));
+
+  return {
+    _id: ratingCopy.item._id,
+    rating: ratingCopy.item.rating,
+    kind: ratingCopy.kind,
+  };
+}
+
 export function extendObjectWithListenNotesItem(object, listenNotesItem) {
   return {
     _id: object.item._id ? object.item._id : object.item,
@@ -62,8 +73,8 @@ export function extractItemIds(eventsWithItems, itemType) {
 
   eventsWithItems.map((event) => {
     if (event.object) {
-      if (event.object.item && !itemIds.includes(event.object.item)) {
-        itemIds.push(event.object.item);
+      if (event.object.kind === itemType && !itemIds.includes(event.object.item._id)) {
+        itemIds.push(event.object.item._id);
       }
     }
 

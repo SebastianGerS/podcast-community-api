@@ -15,6 +15,7 @@ NotificationSchema.post('save', async (doc, next) => {
     populate: [
       { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] },
       { path: 'target.item', select: ['profile_img.thumb', 'username', '_id'] },
+      { path: 'object.item', select: ['_id'] },
     ],
   }).execPopulate();
   return next();
@@ -26,6 +27,7 @@ NotificationSchema.pre('find', function populate(next) {
     populate: [
       { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] },
       { path: 'target.item', select: ['profile_img.thumb', 'username', '_id'] },
+      { path: 'object.item', select: ['_id'] },
     ],
   });
   next();
@@ -37,6 +39,7 @@ NotificationSchema.pre('findOneAndUpdate', function populate(next) {
     populate: [
       { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] },
       { path: 'target.item', select: ['profile_img.thumb', 'username', '_id'] },
+      { path: 'object.item', select: ['_id'] },
     ],
   });
   next();

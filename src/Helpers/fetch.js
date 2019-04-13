@@ -1,7 +1,8 @@
 /* eslint-disable global-require */
 import Axios from 'axios';
 import {
-  extendObjectWithListenNotesItem, formatPopulatedEvent, formatPopulatedUser, extractItemIds,
+  extendObjectWithListenNotesItem, formatPopulatedEvent, formatPopulatedUser,
+  extractItemIds, formatPopulatedRating,
 } from '../lib/Event';
 
 if (!process.env.JWT_SECRET) {
@@ -126,8 +127,10 @@ function mergeEventWithListenNotesData(eventsWithItems, fetchedItems, itemType) 
 
     fetchedItems.map((item) => {
       if (event.object) {
-        if (item.id === event.object.item) {
-          eventCopy.object = extendObjectWithListenNotesItem(event.object, item);
+        if (event.object.item) {
+          if (item.id === event.object.item._id) {
+            eventCopy.object = extendObjectWithListenNotesItem(event.object, item);
+          }
         }
       }
 
@@ -156,6 +159,9 @@ function mergeEventWithListenNotesData(eventsWithItems, fetchedItems, itemType) 
       eventCopy.target = formatPopulatedUser(event.target);
     }
 
+    if (event.object.kind === 'Rating') {
+      eventCopy.object = formatPopulatedRating(event.object);
+    }
     return eventCopy;
   });
 

@@ -1,6 +1,6 @@
 import { findNotifications, deleteNotification, updateNotification } from '../lib/Notification';
 import { findUserById, handleUserUpdate } from '../lib/User';
-import { populateNotificationsWithListenNotesData } from '../Helpers/fetch';
+import { formatNotifications } from '../Helpers/fetch';
 
 export default {
   async findAllOnUser(req, res) {
@@ -29,9 +29,7 @@ export default {
 
     const morePages = total - skip !== count;
 
-    const notificationsWithListenNotesData = (
-      await populateNotificationsWithListenNotesData(notificationsPart)
-    );
+    const formatedNotifications = await formatNotifications(notificationsPart);
 
     const numberOfUnobserved = notificationsFull.reduce(
       (unobservedCount, notification) => (
@@ -44,7 +42,7 @@ export default {
       morePages,
       next_offset: skip + limit,
       count,
-      results: notificationsWithListenNotesData,
+      results: formatedNotifications,
       total,
       numberOfUnobserved,
     };
@@ -95,7 +93,7 @@ export default {
 
       if (notification.errmsg) return res.status(404).json({ error: notification });
       status = 200;
-      response.notification = notification;
+      response.notificationId = notificationId;
     } else {
       status = 401;
       response.error = { errmsg: 'You are not authorized to update this notification' };

@@ -1,9 +1,11 @@
-import * as Event from '../lib/Event';
+import {
+  findEvents, createEvent, formatPopulatedEvent, formatPopulatedUser,
+} from '../lib/Event';
 import { createNotification } from '../lib/Notification';
 import { handleUserUpdate, findUserById } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
-import { replaceObjectOnNotification } from '../Helpers/fetch';
 import { findOrCreatePodcast } from '../lib/Podcast';
+import { formatEvents } from '../Helpers/fetch';
 
 export default {
   async create(req, res, io) {
@@ -13,60 +15,65 @@ export default {
     } = req.body;
 
     const body = {};
-    const eventBody = { agent, target, object: { item: object.item, kind: object.kind } };
+    const eventBody = {
+      agent,
+      target: { item: target._id, kind: target.kind },
+      object: { item: object._id, kind: object.kind },
+    };
     const response = {};
     const notificationTypes = ['request', 'follow', 'confirm', 'recommend'];
+    const eventEmitionTypes = ['confirm', 'follow', 'recommend', 'subscribe'];
     let notificationId;
 
+    const user = await findUserById(req.userId);
+
+    if (user.errmsg) return res.status(404).json({ error: user });
+
     if (target.kind === 'Podcast') {
-      const user = await findUserById(req.userId);
-      eventBody.type = user.subscriptions.includes(target.item) ? 'unsubscribe' : 'subscribe';
+      eventBody.type = user.subscriptions.includes(target._id) ? 'unsubscribe' : 'subscribe';
 
       if (eventBody.type === 'unsubscribe') {
         await Promise.all(user.categories.map(async (categoryId) => {
           const category = await findCategoryById(categoryId).catch(error => error);
           if (category.errmsg) return res.status(500).json({ error: category, message: 'Error finding category' });
-          if (category.podcasts.includes(target.item)) {
+          if (category.podcasts.includes(target._id)) {
             const categoryWithMatch = await handleCategoryUpdate(
               category._id,
-              { podcasts: target.item },
+              { podcasts: target._id },
             ).catch(error => error);
             if (categoryWithMatch.errmsg) return res.status(500).json({ error: categoryWithMatch, message: 'Error removing podcast from category' });
           }
           return category;
         }));
       } else {
-        const podcast = findOrCreatePodcast({ _id: target.item }).catch(error => error);
+        const podcast = findOrCreatePodcast({ _id: target._id }).catch(error => error);
 
         if (podcast.errmsg) return res.status(409).json({ error: podcast });
       }
-      response.event = await Event.createEvent(eventBody);
+      response.event = await createEvent(eventBody);
 
       if (response.event.errmsg) return res.status(500).json({ error: response.event, message: 'Error creating the event' });
 
       body.events = response.event._id;
-      body.subscriptions = target.item;
+      body.subscriptions = target._id;
     }
     if (target.kind === 'Episode') {
-      const user = await findUserById(req.userId);
+      eventBody.type = user.listenlist.includes(target._id) ? 'remove' : 'add';
 
-      eventBody.type = user.listenlist.includes(target.item) ? 'remove' : 'add';
-
-      response.event = await Event.createEvent(eventBody);
+      response.event = await createEvent(eventBody);
 
       if (response.event.errmsg) return res.status(500).json({ error: response.event, message: 'Error creating the event' });
 
       body.events = response.event._id;
-      body.listenlist = target.item;
+      body.listenlist = target._id;
     }
     if (target.kind === 'User') {
       if (type === 'follows') {
-        const user = await findUserById(req.userId);
-        const targetUser = await findUserById(target.item);
+        const targetUser = await findUserById(target._id);
 
         let eventType;
 
-        if (user.following.includes(target.item)) {
+        if (user.following.includes(target._id)) {
           eventType = 'unfollow';
         } else if (targetUser.type === 'public') {
           eventType = 'follow';
@@ -78,32 +85,31 @@ export default {
 
         eventBody.type = eventType;
       } else if (type === 'restriction') {
-        const user = await findUserById(req.userId);
-
-        eventBody.type = user.restricted.includes(target.item) ? 'unblock' : 'block';
+        eventBody.type = user.restricted.includes(target._id) ? 'unblock' : 'block';
       } else {
         eventBody.type = type;
       }
-      response.event = await Event.createEvent(eventBody);
+      response.event = await createEvent(eventBody);
 
       if (response.event.errmsg) return res.status(500).json({ error: response.event, message: 'Error creating the event' });
 
       if (notificationTypes.includes(eventBody.type)) {
-        const notificationBody = { user: target.item, event: response.event._id };
+        const notificationBody = { user: target._id, event: response.event._id };
         const notification = await createNotification(notificationBody);
 
         if (notification.errmsg) return res.status(500).json({ error: notification, message: 'Error creating the notification' });
 
         notificationId = notification._id;
+        const notificationCopy = JSON.parse(JSON.stringify(notification));
 
-        const modifiedNotification = replaceObjectOnNotification(notification, object);
+        notificationCopy.event = formatPopulatedEvent(notification.event, object);
 
-        io.emit(`user/${notification.user}/notification`, modifiedNotification);
+        io.emit(`user/${notification.user}/notification`, notificationCopy);
       }
 
       if (response.event.type === 'follow' || response.event.type === 'unfollow') {
         body.events = response.event._id;
-        body.following = target.item;
+        body.following = target._id;
 
         const targetBody = {
           followers: agent.item,
@@ -114,7 +120,7 @@ export default {
           targetBody.notifications = notificationId;
         }
 
-        const updateTargetUser = await handleUserUpdate(target.item, targetBody);
+        const updateTargetUser = await handleUserUpdate(target._id, targetBody);
 
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'request' || response.event.type === 'unrequest') {
@@ -127,13 +133,13 @@ export default {
           targetBody.notifications = notificationId;
         }
 
-        const updateTargetUser = await handleUserUpdate(target.item, targetBody);
+        const updateTargetUser = await handleUserUpdate(target._id, targetBody);
 
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'confirm') {
         body.events = response.event._id;
-        body.followers = target.item;
-        body.requests = target.item;
+        body.followers = target._id;
+        body.requests = target._id;
 
         const targetBody = {
           following: agent.item,
@@ -144,25 +150,25 @@ export default {
           targetBody.notifications = notificationId;
         }
 
-        const updateTargetUser = await handleUserUpdate(target.item, targetBody);
+        const updateTargetUser = await handleUserUpdate(target._id, targetBody);
 
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'reject') {
         body.events = response.event._id;
-        body.requests = target.item;
+        body.requests = target._id;
       } else if (response.event.type === 'block' || response.event.type === 'unblock') {
         body.events = response.event._id;
-        body.restricted = target.item;
+        body.restricted = target._id;
       } else if (response.event.type === 'remove') {
         body.events = response.event._id;
-        body.followers = target.item;
+        body.followers = target._id;
 
         const targetBody = {
           following: agent.item,
           events: response.event._id,
         };
 
-        const updateTargetUser = await handleUserUpdate(target.item, targetBody);
+        const updateTargetUser = await handleUserUpdate(target._id, targetBody);
 
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'recommend') {
@@ -172,7 +178,7 @@ export default {
           targetBody.notifications = notificationId;
         }
 
-        const updateTargetUser = await handleUserUpdate(target.item, targetBody);
+        const updateTargetUser = await handleUserUpdate(target._id, targetBody);
         body.events = response.event._id;
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       }
@@ -180,6 +186,57 @@ export default {
     const updateUser = await handleUserUpdate(req.userId, body);
 
     if (updateUser.errmsg) return res.status(500).json({ error: updateUser, message: 'Error updating the user' });
+
+    if (eventEmitionTypes.includes(response.event.type)) {
+      let eventCopy = JSON.parse(JSON.stringify(response.event));
+
+      if (eventCopy.target.kind === 'Podcast') {
+        eventCopy.target = target;
+        eventCopy.agent = formatPopulatedUser(eventCopy.agent);
+      } else {
+        eventCopy = formatPopulatedEvent(eventCopy, object);
+      }
+
+      user.followers.map((follower) => {
+        if (follower !== eventCopy.target._id) {
+          io.emit(`users/${follower}/event`, eventCopy);
+        }
+        return follower;
+      });
+    }
+
+    return res.status(200).json(response);
+  },
+  async followingEvents(req, res) {
+    const { userId } = req;
+    const { offset } = req.query;
+
+    const response = {};
+
+    const user = await findUserById(userId).catch(error => error);
+
+    if (user.errmsg) return res.status(404).json({ error: user });
+
+    const eventTypes = ['confirm', 'follow', 'recommend', 'subscribe', 'rating'];
+
+    const query = { 'agent.item': { $in: user.following }, 'target.item': { $ne: userId }, type: { $in: eventTypes } };
+    const skip = +offset;
+    const limit = 10;
+    const sort = { date: -1 };
+
+    const eventsPartial = await findEvents({
+      query, skip, limit, sort,
+    }).catch(error => error);
+
+    if (eventsPartial.errmsg) return res.status(404).json({ error: eventsPartial });
+
+    const eventsFull = await findEvents({ query }).catch(error => error);
+
+    if (eventsFull.errmsg) return res.status(404).json({ error: eventsFull });
+
+    response.events = await formatEvents(eventsPartial);
+    response.next_offset = skip + eventsPartial.length;
+    response.morePages = eventsFull.length - skip !== eventsPartial.length;
 
     return res.status(200).json(response);
   },

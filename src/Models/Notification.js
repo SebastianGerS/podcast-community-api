@@ -10,17 +10,38 @@ const NotificationSchema = new Schema({
 });
 
 NotificationSchema.post('save', async (doc, next) => {
-  await doc.populate({ path: 'event', populate: { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] } }).execPopulate();
+  await doc.populate({
+    path: 'event',
+    populate: [
+      { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] },
+      { path: 'target.item', select: ['profile_img.thumb', 'username', '_id'] },
+      { path: 'object.item', select: ['_id'] },
+    ],
+  }).execPopulate();
   return next();
 });
 
 NotificationSchema.pre('find', function populate(next) {
-  this.populate({ path: 'event', populate: { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] } });
+  this.populate({
+    path: 'event',
+    populate: [
+      { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] },
+      { path: 'target.item', select: ['profile_img.thumb', 'username', '_id'] },
+      { path: 'object.item', select: ['_id'] },
+    ],
+  });
   next();
 });
 
 NotificationSchema.pre('findOneAndUpdate', function populate(next) {
-  this.populate({ path: 'event', populate: { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] } });
+  this.populate({
+    path: 'event',
+    populate: [
+      { path: 'agent.item', select: ['profile_img.thumb', 'username', '_id'] },
+      { path: 'target.item', select: ['profile_img.thumb', 'username', '_id'] },
+      { path: 'object.item', select: ['_id'] },
+    ],
+  });
   next();
 });
 

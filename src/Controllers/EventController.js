@@ -217,7 +217,7 @@ export default {
 
     if (user.errmsg) return res.status(404).json({ error: user });
 
-    const eventTypes = ['confirm', 'follow', 'recommend', 'subscribe'];
+    const eventTypes = ['confirm', 'follow', 'recommend', 'subscribe', 'rating'];
 
     const query = { 'agent.item': { $in: user.following }, 'target.item': { $ne: userId }, type: { $in: eventTypes } };
     const skip = +offset;
@@ -233,7 +233,6 @@ export default {
     const eventsFull = await findEvents({ query }).catch(error => error);
 
     if (eventsFull.errmsg) return res.status(404).json({ error: eventsFull });
-
 
     response.events = await formatEvents(eventsPartial);
     response.next_offset = skip + eventsPartial.length;

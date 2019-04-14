@@ -1,6 +1,7 @@
 import uuidv4 from 'uuid/v4';
 import * as User from '../lib/User';
 import { hashPassword } from '../Helpers/db';
+import { createMetaUser } from '../lib/MetaUser';
 
 export default {
   async create(req, res) {
@@ -30,7 +31,7 @@ export default {
       return res.status(500).json({ error: user, message });
     }
 
-    const metaUser = await User.createMetaUser({
+    const metaUser = await createMetaUser({
       _id: metaUserId,
       user: user.id,
     }).catch(error => error);

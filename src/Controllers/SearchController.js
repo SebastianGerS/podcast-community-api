@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
-import { searchListenNotes, fetchFromListenNotes } from '../Helpers/fetch';
+import { searchListenNotes, fetchFromListenNotes, mapRatingsToListenNoteResults } from '../Helpers/fetch';
 import { findUsers } from '../lib/User';
+import { findEpisodes } from '../lib/Episode';
+import { findPodcasts } from '../lib/Podcast';
 
 export default {
   async find(req, res) {
@@ -10,11 +12,29 @@ export default {
 
       response.morePages = (response.total - response.next_offset) > 0;
       response.term = req.query.term;
+
       if (response.results) {
         if (response.results.length === 0) {
           response.error = new Error();
           response.error.errmsg = 'No results where found';
           return res.status(404).json(response);
+        }
+
+        const itemIds = response.results.map(item => item.id);
+        if (req.query.type === 'episode') {
+          const episodes = await findEpisodes({ query: { _id: { $in: itemIds } } })
+            .catch(error => error);
+
+          response.results = Array.isArray(episodes)
+            ? mapRatingsToListenNoteResults(response.results, episodes)
+            : response.results;
+        } else if (req.query.type === 'podcast') {
+          const podcasts = await findPodcasts({ query: { _id: { $in: itemIds } } })
+            .catch(error => error);
+
+          response.results = Array.isArray(podcasts)
+            ? mapRatingsToListenNoteResults(response.results, podcasts)
+            : response.results;
         }
       } else {
         return res.status(404).json({ error: response });

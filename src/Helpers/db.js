@@ -34,6 +34,10 @@ export async function findOne(Model, input) {
         const NotFoundError = new Error();
         NotFoundError.errmsg = 'Not found';
         reject(NotFoundError);
+      } else if (output.length === 0) {
+        const NotFoundError = new Error();
+        NotFoundError.errmsg = 'Not found';
+        reject(NotFoundError);
       }
       resolve(output);
     }),
@@ -42,19 +46,28 @@ export async function findOne(Model, input) {
 }
 
 export async function find(Model, fields, input) {
-  const { query, skip, limit } = input;
+  const {
+    query, skip, limit, sort,
+  } = input;
+
   const response = await new Promise((resolve, reject) => Model.find(query, fields)
+    .sort(sort)
     .skip(skip)
     .limit(limit)
     .exec((error, output) => {
       if (error) {
         reject(error);
       }
-      if (output.length === 0) {
+      if (!output) {
+        const NotFoundError = new Error();
+        NotFoundError.errmsg = 'No results where found';
+        reject(NotFoundError);
+      } else if (output.length === 0) {
         const NotFoundError = new Error();
         NotFoundError.errmsg = 'No results where found';
         reject(NotFoundError);
       }
+
       resolve(output);
     }));
   return response;
@@ -78,8 +91,7 @@ export async function update(Model, _id, input) {
 
 export async function findAndUpdate(Model, _id, input) {
   const response = await new Promise(
-
-    (resolve, reject) => Model.findOneAndUpdate({ _id }, input, (error, output) => {
+    (resolve, reject) => Model.findOneAndUpdate({ _id }, input, { new: true }, (error, output) => {
       if (error) reject(error);
       if (!output) {
         const NotFoundError = new Error();
@@ -129,4 +141,13 @@ export async function hashPassword(password) {
   const newSalt = await bcrypt.genSalt(rounds).catch(error => error);
   const passwordHash = await bcrypt.hash(password, newSalt).catch(error => error);
   return passwordHash;
+}
+
+export async function findOrCreate(Model, input) {
+  const item = await findOne(Model, input).catch(error => error);
+
+  if (item.errmsg === 'Not found') {
+    return create(Model, input).catch(error => error);
+  }
+  return item;
 }

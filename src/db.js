@@ -11,7 +11,7 @@ const username = process.env.DB_USERNAME;
 const password = process.env.DB_PASSWORD;
 const dbConnectionString = `mongodb://${username}:${password}@${db}`;
 
-mongoose.connect(dbConnectionString, { useNewUrlParser: true });
+mongoose.connect(dbConnectionString, { useNewUrlParser: true, useFindAndModify: false });
 
 mongoose.connection.on('error', (error) => {
   setTimeout(() => {

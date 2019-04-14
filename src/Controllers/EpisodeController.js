@@ -1,15 +1,23 @@
 import { fetchEpisodeListenNotes } from '../Helpers/fetch';
 import { removeHtmlFromString } from '../Helpers/general';
+import { findOrCreateEpisode } from '../lib/Episode';
 
 export default {
   async findOne(req, res) {
-    const response = await fetchEpisodeListenNotes(req.params.episodeId);
+    const { episodeId } = req.params;
 
-    if (response.errmsg) return res.status(response.status).json({ error: response });
+    const lnEpisode = await fetchEpisodeListenNotes(episodeId);
 
-    response.description = removeHtmlFromString(response.description);
-    response.podcast_id = response.podcast.id;
+    if (lnEpisode.errmsg) return res.status(lnEpisode.status).json({ error: lnEpisode });
 
-    return res.status(200).json(response);
+    const episode = await findOrCreateEpisode({ _id: episodeId, podcast: lnEpisode.podcast.id });
+
+    if (episode.errmsg) return res.status(404).json({ error: episode });
+
+    lnEpisode.description = removeHtmlFromString(lnEpisode.description);
+    lnEpisode.podcast_id = lnEpisode.podcast.id;
+    lnEpisode.avrageRating = episode.avrageRating;
+
+    return res.status(200).json({ episode: lnEpisode });
   },
 };

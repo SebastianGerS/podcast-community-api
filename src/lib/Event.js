@@ -4,6 +4,7 @@ import Event from '../Models/Event';
 import {
   find, create,
 } from '../Helpers/db';
+import { reduceToString } from '../Helpers/general';
 /* eslint-disable import/prefer-default-export */
 export const createEvent = R.partial(create, [Event]);
 export const findEvents = R.partial(find, [Event, {
@@ -89,15 +90,7 @@ export function extractItemIds(eventsWithItems, itemType) {
     return event;
   });
 
-  const stringOfItemIds = itemIds.reduce((ids, id, index) => {
-    if (index === 0 && itemIds.length > 1) {
-      return `${id},`;
-    } if (index === itemIds.length - 1) {
-      return `${ids},${id}`;
-    }
-
-    return `${ids},${id},`;
-  });
+  const stringOfItemIds = reduceToString(itemIds, ',');
 
   return stringOfItemIds;
 }

@@ -17,9 +17,7 @@ export async function emitUpdatedRatings(io, podcastId, podcastEpisodes, episode
 
   if (updatedEpisode.errmsg) return { error: updatedEpisode };
 
-  io.emit(`episodes/${episodeId}/rating`, avrageEpisodeRating);
-
-  io.emit(`search/episodes/${episodeId}/rating`, { episodeId, rating: avrageEpisodeRating });
+  io.emit(`episodes/${episodeId}/rating`, { itemId: episodeId, rating: avrageEpisodeRating });
 
   const query = { query: { episode: { $in: podcastEpisodes } } };
 
@@ -36,8 +34,7 @@ export async function emitUpdatedRatings(io, podcastId, podcastEpisodes, episode
 
   if (updatedPodcast.errmsg) return { error: updatedPodcast };
 
-  io.emit(`podcasts/${podcastId}/rating`, { avrageRating: avragePodcastRating, episodeRating: { episodeId, rating: avrageEpisodeRating } });
-  io.emit(`search/podcasts/${podcastId}/rating`, { podcastId, rating: avragePodcastRating });
+  io.emit(`podcasts/${podcastId}/rating`, { itemId: podcastId, rating: avragePodcastRating });
 
   return { info: 'success' };
 }

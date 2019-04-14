@@ -1,56 +1,67 @@
 import { findUserById } from '../lib/User';
-import { findCategoryById } from '../lib/Category';
-import { fetchPodcastListenNotes, getTopPodcasts } from '../Helpers/fetch';
-import { findOrCreatePodcast } from '../lib/Podcast';
-import { findEpisodes } from '../lib/Episode';
+import { findCategories } from '../lib/Category';
+import {
+  fetchPodcastListenNotes, getTopPodcasts, fetchPodcastsListenNotes, mapRatingsToListenNoteResults,
+} from '../Helpers/fetch';
+import { findOrCreatePodcast, findPodcasts } from '../lib/Podcast';
+import { reduceToString } from '../Helpers/general';
 
 export default {
   async find(req, res) {
+    const response = {};
+    let status = 404;
+
     const user = await findUserById(req.params.userId).catch(error => error);
 
     if (user.errmsg) return res.status(404).json({ error: user });
-    const subscriptions = [];
-    const categories = [];
-    await Promise.all(user.subscriptions.map(async (subscription) => {
-      const podcast = await fetchPodcastListenNotes(subscription);
 
-      if (podcast.errmsg) return res.status(podcast.status).json({ error: podcast });
+    if (user.subscriptions.length > 0) {
+      const podcastIds = reduceToString(user.subscriptions, ',');
 
-      subscriptions.push(podcast);
+      const subscriptions = await fetchPodcastsListenNotes(`ids=${podcastIds}`).catch(error => error);
 
-      return podcast;
-    }));
-
-    await Promise.all(user.categories.map(async (categoryId) => {
-      const category = await findCategoryById(categoryId);
-
-      if (category.error) return res.status(404).json({ error: category });
-
-      categories.push(category);
-
-      return category;
-    }));
-
-
-    const categoriesWithPodcasts = categories.map((category) => {
-      const categoryWithPodcasts = {};
-      categoryWithPodcasts.name = category.name;
-      categoryWithPodcasts._id = category._id;
-      const includedIds = subscriptions.map(
-        podcast => podcast.id,
-      ).filter(id => category.podcasts.includes(id));
-
-      const podcasts = subscriptions.filter(subscription => includedIds.includes(subscription.id));
-      if (podcasts) {
-        categoryWithPodcasts.podcasts = podcasts;
-      } else {
-        categoryWithPodcasts.podcasts = [];
+      if (subscriptions.errmsg || subscriptions.length === 0) {
+        return res.status(404).json({ error: { errmsg: 'Not Found' } });
       }
 
-      return categoryWithPodcasts;
-    });
+      const podcasts = await findPodcasts({ query: { _id: { $in: user.subscriptions } } });
 
-    return res.status(200).json({ subscriptions, categories: categoriesWithPodcasts });
+      response.subscriptions = Array.isArray(podcasts)
+        ? mapRatingsToListenNoteResults(subscriptions, podcasts)
+        : [];
+
+      const categories = await findCategories({
+        query: { _id: { $in: user.categories } },
+      }).catch(error => error);
+
+      const categoriesWithPodcasts = Array.isArray(categories) ? categories.map((category) => {
+        const categoryWithPodcasts = {};
+        categoryWithPodcasts.name = category.name;
+        categoryWithPodcasts._id = category._id;
+        const includedIds = subscriptions.map(
+          podcast => podcast.id,
+        ).filter(id => category.podcasts.includes(id));
+
+        const includedPodcasts = subscriptions.filter(subscription => (
+          includedIds.includes(subscription.id)
+        ));
+
+        if (includedPodcasts) {
+          categoryWithPodcasts.podcasts = includedPodcasts;
+        } else {
+          categoryWithPodcasts.podcasts = [];
+        }
+
+        return categoryWithPodcasts;
+      })
+        : [];
+
+      response.categories = categoriesWithPodcasts;
+
+      status = 200;
+    }
+
+    return res.status(status).json(response);
   },
   async getTopList(req, res) {
     const response = await getTopPodcasts().catch(error => error);
@@ -72,17 +83,7 @@ export default {
 
     if (podcast.errmsg) return res.status(podcast.status).json({ error: podcast });
 
-    const query = { query: { podcast: podcastId } };
-
-    const episodes = await findEpisodes(query).catch(error => error);
-
-    const episodeRatings = Array.isArray(episodes)
-      ? episodes.map(episode => (
-        { episodeId: episode.id, rating: episode.avrageRating }
-      ))
-      : [];
-
-    response.ratings = { avrageRating: podcast.avrageRating, episodeRatings };
+    response.podcast.avrageRating = podcast.avrageRating;
 
     return res.status(200).json(response);
   },

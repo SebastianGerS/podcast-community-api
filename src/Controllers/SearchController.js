@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { searchListenNotes, fetchFromListenNotes } from '../Helpers/fetch';
+import { searchListenNotes, fetchFromListenNotes, mapRatingsToListenNoteResults } from '../Helpers/fetch';
 import { findUsers } from '../lib/User';
 import { findEpisodes } from '../lib/Episode';
 import { findPodcasts } from '../lib/Podcast';
@@ -24,18 +24,17 @@ export default {
         if (req.query.type === 'episode') {
           const episodes = await findEpisodes({ query: { _id: { $in: itemIds } } })
             .catch(error => error);
-          const episodeRatings = episodes.length > 0
-            ? episodes.map(episode => ({ episodeId: episode._id, rating: episode.avrageRating }))
-            : [];
 
-          response.ratings = episodeRatings;
+          response.results = Array.isArray(episodes)
+            ? mapRatingsToListenNoteResults(response.results, episodes)
+            : response.results;
         } else if (req.query.type === 'podcast') {
           const podcasts = await findPodcasts({ query: { _id: { $in: itemIds } } })
             .catch(error => error);
-          const podcastsRatings = podcasts.length > 0
-            ? podcasts.map(podcast => ({ podcastId: podcast._id, rating: podcast.avrageRating }))
-            : [];
-          response.ratings = podcastsRatings;
+
+          response.results = Array.isArray(podcasts)
+            ? mapRatingsToListenNoteResults(response.results, podcasts)
+            : response.results;
         }
       } else {
         return res.status(404).json({ error: response });

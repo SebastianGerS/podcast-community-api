@@ -223,3 +223,20 @@ export async function formatNotifications(notifications) {
 
   return formatedNotifications;
 }
+
+export const mapRatingsToListenNoteResults = (listenNotesItems, itemsWidthRatings) => {
+  const resultsWithRatings = [...listenNotesItems.map((lsItem) => {
+    const lsItemCopy = lsItem;
+
+    itemsWidthRatings.map((item) => {
+      if (lsItemCopy.id === item._id) {
+        lsItemCopy.avrageRating = item.avrageRating;
+      }
+      return item;
+    });
+
+    return lsItemCopy;
+  })];
+
+  return resultsWithRatings;
+};

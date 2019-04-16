@@ -16,7 +16,7 @@ const EventSchema = new Schema({
       'confirm',
       'reject',
       'recommend',
-      'episode',
+      'newEpisode',
       'add',
       'remove',
       'block',

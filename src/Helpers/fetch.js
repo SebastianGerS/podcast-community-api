@@ -1,9 +1,15 @@
 /* eslint-disable global-require */
 import Axios from 'axios';
+import R from 'ramda';
 import {
   extendObjectWithListenNotesItem, formatPopulatedEvent, formatPopulatedUser,
   extractItemIds, formatPopulatedRating,
 } from '../lib/Event';
+import { OrderByDate } from './general';
+import { updateSubscription } from '../lib/Subscriptions';
+import { findEpisodeById, createEpisode } from '../lib/Episode';
+import { handlePodcastUpdate } from '../lib/Podcast';
+import { createNewEpisodeEvent } from './socket';
 
 if (!process.env.JWT_SECRET) {
   require('dotenv').config();
@@ -123,7 +129,6 @@ export async function fetchEpisodesListenNotes(episodeIds) {
 function mergeEventWithListenNotesData(eventsWithItems, fetchedItems, itemType) {
   const formatedItemEvents = eventsWithItems.map((event) => {
     const eventCopy = JSON.parse(JSON.stringify(event));
-    const setKeys = [];
 
     fetchedItems.map((item) => {
       if (event.object) {
@@ -134,16 +139,16 @@ function mergeEventWithListenNotesData(eventsWithItems, fetchedItems, itemType) 
         }
       }
 
-      if (event.target.kind === itemType) {
-        if (item.id === event.target.item._id) {
-          setKeys.push('target');
-          eventCopy.target = extendObjectWithListenNotesItem(event.target, item);
+      if (event.target) {
+        if (event.target.kind === itemType) {
+          if (item.id === event.target.item._id) {
+            eventCopy.target = extendObjectWithListenNotesItem(event.target, item);
+          }
         }
       }
 
       if (event.agent.kind === itemType) {
         if (item.id === event.agent.item._id) {
-          setKeys.push('agent');
           eventCopy.agent = extendObjectWithListenNotesItem(event.agent, item);
         }
       }
@@ -151,16 +156,28 @@ function mergeEventWithListenNotesData(eventsWithItems, fetchedItems, itemType) 
       return item;
     });
 
-    if (!setKeys.includes('agent')) {
+    if (event.agent.kind === 'User') {
       eventCopy.agent = formatPopulatedUser(event.agent);
+    } else if (event.agent.kind === 'Podcast' && itemType !== 'Podcast') {
+      eventCopy.agent = {
+        _id: event.agent.item._id,
+        kind: event.agent.kind,
+      };
     }
 
-    if (!setKeys.includes('target')) {
-      eventCopy.target = formatPopulatedUser(event.target);
+    if (event.target) {
+      if (event.target.kind === 'User') {
+        eventCopy.target = formatPopulatedUser(event.target);
+      }
     }
 
     if (event.object.kind === 'Rating') {
       eventCopy.object = formatPopulatedRating(event.object);
+    } else if (event.object.kind === 'Episode' && itemType !== 'Episode') {
+      eventCopy.object = {
+        _id: event.object.item._id,
+        kind: event.object.kind,
+      };
     }
     return eventCopy;
   });
@@ -198,7 +215,27 @@ export async function formatEvents(events) {
 
   formatedEvents.push(...eventsWithoutObject.map(event => formatPopulatedEvent(event)));
 
-  return formatedEvents;
+  const mergedEvents = [];
+  const mergedEventIds = [];
+
+  formatedEvents.map((eventOuter, oIndex) => {
+    let eventCopy = eventOuter;
+    formatedEvents.map((eventInner, iIndex) => {
+      if (eventOuter._id === eventInner._id && oIndex !== iIndex) {
+        eventCopy = R.mergeDeepRight(eventOuter, eventInner);
+      }
+      return eventInner;
+    });
+
+    if (!mergedEventIds.includes(eventCopy._id)) {
+      mergedEvents.push(eventCopy);
+      mergedEventIds.push(eventCopy._id);
+    }
+
+    return eventCopy;
+  });
+
+  return OrderByDate(mergedEvents);
 }
 
 
@@ -240,3 +277,33 @@ export const mapRatingsToListenNoteResults = (listenNotesItems, itemsWidthRating
 
   return resultsWithRatings;
 };
+
+
+export async function fetchAndEmitToSubscribers(io, podcastId, userId = undefined) {
+  const listenNotesPodcast = await fetchPodcastListenNotes(podcastId).catch(error => error);
+
+  if (!listenNotesPodcast.errmsg) {
+    updateSubscription(podcastId, { updated_at: Date.now() }).catch(error => error);
+
+    const latestEpisodeId = listenNotesPodcast.episodes[0].id;
+
+    const episode = await findEpisodeById(latestEpisodeId).catch(error => error);
+
+    if (episode.errmsg) {
+      const newEpisode = await createEpisode(
+        { _id: latestEpisodeId, podcast: podcastId },
+      ).catch(error => error);
+
+      if (newEpisode.errmsg) return newEpisode;
+
+      const updatedPodcast = await handlePodcastUpdate(podcastId,
+        { episodes: newEpisode._id }).catch(error => error);
+
+      if (updatedPodcast.errmsg) return updatedPodcast;
+
+      createNewEpisodeEvent(io, listenNotesPodcast, userId);
+    }
+  }
+
+  return true;
+}

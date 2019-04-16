@@ -5,6 +5,10 @@ import {
   find, create,
 } from '../Helpers/db';
 import { reduceToString } from '../Helpers/general';
+import { findOrCreatePodcast } from './Podcast';
+import { findOrCreateSubscription, deleteSubscription } from './Subscriptions';
+import { fetchAndEmitToSubscribers } from '../Helpers/fetch';
+import { findUsers } from './User';
 /* eslint-disable import/prefer-default-export */
 export const createEvent = R.partial(create, [Event]);
 export const findEvents = R.partial(find, [Event, {
@@ -79,8 +83,10 @@ export function extractItemIds(eventsWithItems, itemType) {
       }
     }
 
-    if (event.target.kind === itemType && !itemIds.includes(event.target.item._id)) {
-      itemIds.push(event.target.item._id);
+    if (event.target) {
+      if (event.target.kind === itemType && !itemIds.includes(event.target.item._id)) {
+        itemIds.push(event.target.item._id);
+      }
     }
 
     if (event.agent.kind === itemType && !itemIds.includes(event.agent.item._id)) {
@@ -93,4 +99,28 @@ export function extractItemIds(eventsWithItems, itemType) {
   const stringOfItemIds = reduceToString(itemIds, ',');
 
   return stringOfItemIds;
+}
+
+export async function handleSubscribe(podcastId, userId, io) {
+  const podcast = await findOrCreatePodcast({ _id: podcastId }).catch(error => error);
+  await findOrCreateSubscription({ _id: podcastId }).catch(error => error);
+
+  if (podcast.errmsg) return podcast;
+
+  await fetchAndEmitToSubscribers(io, podcastId, userId);
+  return true;
+}
+
+export async function handleUnsubscribe(podcastId, userId) {
+  const querySubscribers = {
+    query: {
+      _id: { $ne: userId }, subscriptions: podcastId,
+    },
+  };
+
+  const subscribedUsers = await findUsers(querySubscribers).catch(error => error);
+
+  if (Array.isArray(subscribedUsers)) {
+    await deleteSubscription(podcastId).catch(error => error);
+  }
 }

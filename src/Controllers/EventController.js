@@ -1,10 +1,10 @@
 import {
-  findEvents, createEvent, formatPopulatedEvent, formatPopulatedUser,
+  findEvents, createEvent, formatPopulatedEvent,
+  formatPopulatedUser, handleSubscribe, handleUnsubscribe,
 } from '../lib/Event';
 import { createNotification } from '../lib/Notification';
-import { handleUserUpdate, findUserById } from '../lib/User';
+import { handleUserUpdate, findUserById, findUsers } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
-import { findOrCreatePodcast } from '../lib/Podcast';
 import { formatEvents } from '../Helpers/fetch';
 
 export default {
@@ -45,10 +45,9 @@ export default {
           }
           return category;
         }));
+        handleUnsubscribe(target._id, req.userId);
       } else {
-        const podcast = findOrCreatePodcast({ _id: target._id }).catch(error => error);
-
-        if (podcast.errmsg) return res.status(409).json({ error: podcast });
+        handleSubscribe(target._id, req.userId, io);
       }
       response.event = await createEvent(eventBody);
 
@@ -217,9 +216,28 @@ export default {
 
     if (user.errmsg) return res.status(404).json({ error: user });
 
-    const eventTypes = ['confirm', 'follow', 'recommend', 'subscribe', 'rating'];
+    const followingUsers = await findUsers({ _id: { $in: user.following } }).catch(error => error);
 
-    const query = { 'agent.item': { $in: user.following }, 'target.item': { $ne: userId }, type: { $in: eventTypes } };
+    const eventIds = [];
+
+    if (Array.isArray(followingUsers)) {
+      followingUsers.map((followedUser) => {
+        followedUser.events.map((event) => {
+          if (!eventIds.includes(event)) {
+            eventIds.push(event);
+          }
+          return event;
+        });
+
+        return followedUser;
+      });
+    }
+
+    const eventTypes = ['confirm', 'follow', 'recommend', 'subscribe', 'rating', 'newEpisode'];
+
+    const query = {
+      _id: { $in: eventIds }, 'agent.item': { $ne: userId }, 'target.item': { $ne: userId }, type: { $in: eventTypes },
+    };
     const skip = +offset;
     const limit = 10;
     const sort = { date: -1 };

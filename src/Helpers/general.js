@@ -1,3 +1,5 @@
+import R from 'ramda';
+
 export const removeFromArray = (list, value) => list.filter(element => element !== value);
 
 export const addToArray = (list, value) => [...list, value];
@@ -30,3 +32,29 @@ export const reduceToString = (array, separator) => {
 
   return stringifiedArray;
 };
+
+
+export const getSecondsFromTimeString = (string) => {
+  const [h, m, s] = string.split(':');
+
+  return +((+h * 60 * 60) + (+m * 60) + (+s));
+};
+
+export function UTCStringToTime(timeString) {
+  return timeString.substr(17, 8);
+}
+
+export function getMillisecondsleft(currentTime, awaitedTime) {
+  let timeLeft;
+  if (currentTime < awaitedTime) {
+    timeLeft = awaitedTime - currentTime;
+  } else if (currentTime > awaitedTime) {
+    timeLeft = 1000 * 60 * 60 * 24 - (currentTime - awaitedTime);
+  } else {
+    timeLeft = 0;
+  }
+
+  return timeLeft;
+}
+
+export const OrderByDate = R.sortWith([R.descend(R.prop('date'))]);

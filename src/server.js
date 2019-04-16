@@ -7,6 +7,7 @@ import path from 'path';
 import sockets from 'socket.io';
 import db from './db';
 import routes from './Routes';
+import { handleCheckForNewEpisodes } from './Tasks/subscriptions';
 
 if (!process.env.PORT) {
   require('dotenv').config();
@@ -26,14 +27,17 @@ app.use(cors(
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-server.listen(port, () => console.log(`express is now listening to port ${port}`));
-
 io.on('connection', (socket) => {
   console.log('client is now connected');
 
   socket.on('disconnect', () => {
     console.log('client is now disconected');
   });
+});
+
+server.listen(port, () => {
+  console.log(`express is now listening to port ${port}`);
+  handleCheckForNewEpisodes(io);
 });
 
 routes(app, io);

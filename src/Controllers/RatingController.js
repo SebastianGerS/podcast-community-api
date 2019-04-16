@@ -6,8 +6,10 @@ import {
 import { handlePodcastUpdate, findOrCreatePodcast } from '../lib/Podcast';
 import { handleEpisodeUpdate, findOrCreateEpisode } from '../lib/Episode';
 import { handleMetaUserUpdate } from '../lib/MetaUser';
-import { emitUpdatedRatings } from '../Helpers/socket';
+import { emitUpdatedRatings, createNewEpisodeEvent } from '../Helpers/socket';
 import { createEvent, formatPopulatedUser, formatPopulatedRating } from '../lib/Event';
+import { fetchPodcastListenNotes } from '../Helpers/fetch';
+import { findSubscriptions } from '../lib/Subscriptions';
 
 export default {
   async create(req, res, io) {
@@ -29,7 +31,9 @@ export default {
     const existingRating = await findOneRating(query).catch(error => error);
 
     if (!existingRating.errmsg) {
-      const updatedRating = await updateRating(existingRating._id, { rating });
+      const updatedRating = await updateRating(
+        existingRating._id, { rating },
+      ).catch(error => error);
 
       if (updatedRating.errmsg) return res.status(404).json({ error: updatedRating });
       ratingId = existingRating._id;
@@ -41,24 +45,47 @@ export default {
       if (episode.errmsg) return res.status(404).json({ error: episode });
 
       if (!podcast.episodes.includes(episode._id)) {
-        const updatedPodcast = await handlePodcastUpdate(podcast._id, { episodes: target._id });
+        const updatedPodcast = await handlePodcastUpdate(
+          podcast._id, { episodes: target._id },
+        ).catch(error => error);
 
         if (updatedPodcast.errmsg) return res.status(404).json({ error: updatedPodcast });
+
+        const subscriptions = findSubscriptions(
+          { query: { _id: podcastId } },
+        ).catch(error => error);
+
+        if (!subscriptions.errmsg) {
+          const listenNotesPodcast = await fetchPodcastListenNotes(podcastId).catch(error => error);
+
+          if (!listenNotesPodcast.errmsg) {
+            if (Array.isArray(listenNotesPodcast.episodes)) {
+              if (target._id === listenNotesPodcast.episodes[0]._id) {
+                createNewEpisodeEvent(io, listenNotesPodcast, req.userId);
+              }
+            }
+          }
+        }
       }
 
       const newRating = await createRating({
         _id: uuidv4(), rating, episode: target._id, user: user.metaUser,
-      });
+      }).catch(error => error);
 
       if (newRating.errmsg) return res.status(404).json({ error: newRating });
 
       ratingId = newRating._id;
 
-      const updatedEpisode = await handleEpisodeUpdate(target._id, { ratings: ratingId });
+      const updatedEpisode = await handleEpisodeUpdate(
+        target._id, { ratings: ratingId },
+      ).catch(error => error);
+
       if (updatedEpisode.errmsg) return res.status(404).json({ error: updatedEpisode });
 
+      const updatedMetaUser = await handleMetaUserUpdate(
+        user.metaUser, { ratings: ratingId },
+      ).catch(error => error);
 
-      const updatedMetaUser = await handleMetaUserUpdate(user.metaUser, { ratings: ratingId });
       if (updatedMetaUser.errmsg) return res.status(404).json({ error: updatedMetaUser });
     }
     const podcastEpisodes = podcast.episodes;

@@ -65,32 +65,34 @@ export async function createNewEpisodeEvent(io, listenNotesPodcast, userId = und
 
   const subscribedUsers = await findUsers(querySubscribers).catch(error => error);
 
-  subscribedUsers.map(async (user) => {
-    if (user._id !== userId) {
-      const newNotification = await createNotification(
-        { user: user._id, event: newEvent._id },
-      ).catch(error => error);
+  if (Array.isArray(subscribedUsers)) {
+    subscribedUsers.map(async (user) => {
+      if (user._id !== userId) {
+        const newNotification = await createNotification(
+          { user: user._id, event: newEvent._id },
+        ).catch(error => error);
 
-      const updateUser = await handleUserUpdate(user._id,
-        { events: newEvent._id, notifications: newNotification._id }).catch(error => error);
+        const updateUser = await handleUserUpdate(user._id,
+          { events: newEvent._id, notifications: newNotification._id }).catch(error => error);
 
-      if (updateUser.errmsg) return updateUser;
-      const notificationCopy = JSON.parse(JSON.stringify(newNotification));
+        if (updateUser.errmsg) return updateUser;
+        const notificationCopy = JSON.parse(JSON.stringify(newNotification));
 
-      const agent = extendObjectWithListenNotesItem(newEvent.agent, listenNotesPodcast);
-      const object = extendObjectWithListenNotesItem(
-        newEvent.object, listenNotesPodcast.episodes[0],
-      );
+        const agent = extendObjectWithListenNotesItem(newEvent.agent, listenNotesPodcast);
+        const object = extendObjectWithListenNotesItem(
+          newEvent.object, listenNotesPodcast.episodes[0],
+        );
 
-      notificationCopy.event = {
-        _id: notificationCopy.event._id,
-        agent,
-        object,
-        type: notificationCopy.event.type,
-      };
+        notificationCopy.event = {
+          _id: notificationCopy.event._id,
+          agent,
+          object,
+          type: notificationCopy.event.type,
+        };
 
-      io.emit(`user/${user._id}/notification`, notificationCopy);
-    }
-    return user;
-  });
+        io.emit(`user/${user._id}/notification`, notificationCopy);
+      }
+      return user;
+    });
+  }
 }

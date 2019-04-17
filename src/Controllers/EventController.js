@@ -1,11 +1,11 @@
 import {
-  findEvents, createEvent, formatPopulatedEvent,
-  formatPopulatedUser, handleSubscribe, handleUnsubscribe,
+  findEvents, createEvent, formatPopulatedEvent, handleSubscribe, handleUnsubscribe,
 } from '../lib/Event';
 import { createNotification } from '../lib/Notification';
 import { handleUserUpdate, findUserById, findUsers } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
 import { formatEvents } from '../Helpers/fetch';
+import { handleFollowUppdateEmitions, handleEventEmitions } from '../Helpers/socket';
 
 export default {
   async create(req, res, io) {
@@ -22,7 +22,7 @@ export default {
     };
     const response = {};
     const notificationTypes = ['request', 'follow', 'confirm', 'recommend'];
-    const eventEmitionTypes = ['confirm', 'follow', 'recommend', 'subscribe'];
+
     let notificationId;
 
     const user = await findUserById(req.userId);
@@ -103,7 +103,7 @@ export default {
 
         notificationCopy.event = formatPopulatedEvent(notification.event, object);
 
-        io.emit(`user/${notification.user}/notification`, notificationCopy);
+        io.emit(`users/${notification.user}/notification`, notificationCopy);
       }
 
       if (response.event.type === 'follow' || response.event.type === 'unfollow') {
@@ -186,23 +186,9 @@ export default {
 
     if (updateUser.errmsg) return res.status(500).json({ error: updateUser, message: 'Error updating the user' });
 
-    if (eventEmitionTypes.includes(response.event.type)) {
-      let eventCopy = JSON.parse(JSON.stringify(response.event));
+    handleEventEmitions(user, response.event, target, object, io);
 
-      if (eventCopy.target.kind === 'Podcast') {
-        eventCopy.target = target;
-        eventCopy.agent = formatPopulatedUser(eventCopy.agent);
-      } else {
-        eventCopy = formatPopulatedEvent(eventCopy, object);
-      }
-
-      user.followers.map((follower) => {
-        if (follower !== eventCopy.target._id) {
-          io.emit(`users/${follower}/event`, eventCopy);
-        }
-        return follower;
-      });
-    }
+    handleFollowUppdateEmitions(response.event, io);
 
     return res.status(200).json(response);
   },

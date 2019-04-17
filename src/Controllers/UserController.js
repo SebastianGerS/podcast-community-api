@@ -102,36 +102,10 @@ export default {
     return res.status(200).json({ info: 'User was deleted' });
   },
   async follows(req, res) {
-    const user = await User.findUserById(req.userId).catch(error => error);
+    const response = await User.getUserWithPopulatedFollows(req.userId);
 
-    if (user.errmsg) return res.status(500).json({ error: user, message: 'Error occurred when trying to fetch curremt user' });
+    if (response.errmsg) return res.status(500).json({ error: response, message: 'Error occurred when trying to fetch user follows' });
 
-    let followers = [];
-
-    if (user.followers.length !== 0) {
-      followers = await User.findUsers({ query: { _id: { $in: user.followers } } })
-        .catch(error => error);
-
-      if (followers.errmsg) return res.status(500).json({ error: followers, message: 'Error occurred when trying to fetch followers' });
-    }
-
-    let following = [];
-
-    if (user.following.length !== 0) {
-      following = await User.findUsers({ query: { _id: { $in: user.following } } })
-        .catch(error => error);
-
-      if (following.errmsg) return res.status(500).json({ error: following, message: 'Error occurred when trying to fetch following' });
-    }
-    let requests = [];
-
-    if (user.requests.length !== 0) {
-      requests = await User.findUsers({ query: { _id: { $in: user.requests } } })
-        .catch(error => error);
-
-      if (requests.errmsg) return res.status(500).json({ error: requests, message: 'Error occurred when trying to fetch requests' });
-    }
-
-    return res.status(200).json({ followers, following, requests });
+    return res.status(200).json(response);
   },
 };

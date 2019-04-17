@@ -11,17 +11,19 @@ export async function create(Model, input) {
   return response;
 }
 
-export async function findById(Model, id) {
+export async function findById(Model, id, populate = []) {
   const response = await new Promise(
-    (resolve, reject) => Model.findById(id, (error, output) => {
-      if (error) reject(error);
-      if (!output) {
-        const notFoundError = new Error();
-        notFoundError.errmsg = 'Not found';
-        reject(notFoundError);
-      }
-      resolve(output);
-    }),
+    (resolve, reject) => Model.findById(id)
+      .populate(populate)
+      .exec((error, output) => {
+        if (error) reject(error);
+        if (!output) {
+          const notFoundError = new Error();
+          notFoundError.errmsg = 'Not found';
+          reject(notFoundError);
+        }
+        resolve(output);
+      }),
   );
   return response;
 }

@@ -18,6 +18,7 @@ export async function verifytoken(token) {
   });
   return response;
 }
+
 export function filterFields(user) {
   return {
     _id: user.id,
@@ -42,6 +43,7 @@ export function filterFields(user) {
 
   };
 }
+
 export const createUser = R.partial(Db.create, [User]);
 
 export const findUserById = R.partial(Db.findById, [User]);
@@ -49,7 +51,16 @@ export const findUserById = R.partial(Db.findById, [User]);
 export const findOneUser = R.partial(Db.findOne, [User]);
 
 export const findUsers = R.partial(Db.find, [User, {
-  _id: 1, username: 1, profile_img: 1, email: 1, type: 1, requests: 1,
+  _id: 1,
+  username: 1,
+  profile_img: 1,
+  email: 1,
+  type: 1,
+  requests: 1,
+  events: 1,
+  subscriptions: 1,
+  followers: 1,
+  following: 1,
 }]);
 
 export const updateUser = R.partial(Db.update, [User]);
@@ -62,6 +73,37 @@ export const handleUserUpdate = R.partial(
 );
 
 export const deleteUser = R.partial(Db.deleteOne, [User]);
+
+export const getUserWithPopulatedFollows = async (id) => {
+  const fieldsToSelect = [
+    '_id',
+    'username',
+    'profile_img',
+    'email',
+    'type',
+    'requests',
+    'events',
+    'subscriptions',
+    'followers',
+    'following',
+  ];
+
+  const populate = [
+    { path: 'following', select: fieldsToSelect },
+    { path: 'followers', select: fieldsToSelect },
+    { path: 'requests', select: fieldsToSelect },
+  ];
+
+  const user = await Db.findById(User, id, populate);
+
+  if (user.errmsg) return user;
+
+  return {
+    followers: user.followers,
+    following: user.following,
+    requests: user.requests,
+  };
+};
 
 export async function auth(data) {
   const response = await new Promise(async (resolve, reject) => {

@@ -1,5 +1,4 @@
 /* eslint-disable global-require, no-console */
-
 import mongoose from 'mongoose';
 
 if (!process.env.PORT) {
@@ -15,7 +14,7 @@ mongoose.connect(dbConnectionString, { useNewUrlParser: true, useFindAndModify: 
 
 mongoose.connection.on('error', (error) => {
   setTimeout(() => {
-    mongoose.connect(`${db}`, { useNewUrlParser: true });
+    mongoose.connect(`${db}`, { useNewUrlParser: true, useFindAndModify: false });
   }, 1000);
   console.log(`error connecting to the database: ${error}`);
 });

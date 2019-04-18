@@ -1,11 +1,14 @@
 import R from 'ramda';
 import Event from '../Models/Event';
-
 import {
   find, create,
 } from '../Helpers/db';
 import { reduceToString } from '../Helpers/general';
-/* eslint-disable import/prefer-default-export */
+import { findOrCreatePodcast } from './Podcast';
+import { deleteSubscription, findSubscriptionById, createSubscription } from './Subscriptions';
+import { fetchAndEmitToSubscribers } from '../Helpers/fetch';
+import { findUsers } from './User';
+
 export const createEvent = R.partial(create, [Event]);
 export const findEvents = R.partial(find, [Event, {
   _id: 1, type: 1, agent: 1, target: 1, object: 1, date: 1,
@@ -79,8 +82,10 @@ export function extractItemIds(eventsWithItems, itemType) {
       }
     }
 
-    if (event.target.kind === itemType && !itemIds.includes(event.target.item._id)) {
-      itemIds.push(event.target.item._id);
+    if (event.target) {
+      if (event.target.kind === itemType && !itemIds.includes(event.target.item._id)) {
+        itemIds.push(event.target.item._id);
+      }
     }
 
     if (event.agent.kind === itemType && !itemIds.includes(event.agent.item._id)) {
@@ -93,4 +98,35 @@ export function extractItemIds(eventsWithItems, itemType) {
   const stringOfItemIds = reduceToString(itemIds, ',');
 
   return stringOfItemIds;
+}
+
+export async function handleSubscribe(podcastId, userId, io) {
+  const podcast = await findOrCreatePodcast({ _id: podcastId }).catch(error => error);
+
+  if (podcast.errmsg) return podcast;
+
+  const subscription = await findSubscriptionById(podcastId).catch(error => error);
+
+  if (subscription.errmsg) {
+    const newSubscription = await createSubscription({ _id: podcastId }).catch(error => error);
+    if (newSubscription.errmsg) return newSubscription;
+
+    await fetchAndEmitToSubscribers(io, podcastId, userId);
+  }
+
+  return true;
+}
+
+export async function handleUnsubscribe(podcastId, userId) {
+  const querySubscribers = {
+    query: {
+      _id: { $ne: userId }, subscriptions: podcastId,
+    },
+  };
+
+  const subscribedUsers = await findUsers(querySubscribers).catch(error => error);
+
+  if (Array.isArray(subscribedUsers)) {
+    await deleteSubscription(podcastId).catch(error => error);
+  }
 }

@@ -1,11 +1,11 @@
 import {
-  findEvents, createEvent, formatPopulatedEvent, formatPopulatedUser,
+  findEvents, createEvent, formatPopulatedEvent, handleSubscribe, handleUnsubscribe,
 } from '../lib/Event';
 import { createNotification } from '../lib/Notification';
-import { handleUserUpdate, findUserById } from '../lib/User';
+import { handleUserUpdate, findUserById, findUsers } from '../lib/User';
 import { handleCategoryUpdate, findCategoryById } from '../lib/Category';
-import { findOrCreatePodcast } from '../lib/Podcast';
 import { formatEvents } from '../Helpers/fetch';
+import { handleFollowUppdateEmitions, handleEventEmitions } from '../Helpers/socket';
 
 export default {
   async create(req, res, io) {
@@ -22,7 +22,7 @@ export default {
     };
     const response = {};
     const notificationTypes = ['request', 'follow', 'confirm', 'recommend'];
-    const eventEmitionTypes = ['confirm', 'follow', 'recommend', 'subscribe'];
+
     let notificationId;
 
     const user = await findUserById(req.userId);
@@ -45,10 +45,9 @@ export default {
           }
           return category;
         }));
+        handleUnsubscribe(target._id, req.userId);
       } else {
-        const podcast = findOrCreatePodcast({ _id: target._id }).catch(error => error);
-
-        if (podcast.errmsg) return res.status(409).json({ error: podcast });
+        handleSubscribe(target._id, req.userId, io);
       }
       response.event = await createEvent(eventBody);
 
@@ -104,7 +103,7 @@ export default {
 
         notificationCopy.event = formatPopulatedEvent(notification.event, object);
 
-        io.emit(`user/${notification.user}/notification`, notificationCopy);
+        io.emit(`users/${notification.user}/notification`, notificationCopy);
       }
 
       if (response.event.type === 'follow' || response.event.type === 'unfollow') {
@@ -187,23 +186,9 @@ export default {
 
     if (updateUser.errmsg) return res.status(500).json({ error: updateUser, message: 'Error updating the user' });
 
-    if (eventEmitionTypes.includes(response.event.type)) {
-      let eventCopy = JSON.parse(JSON.stringify(response.event));
+    handleEventEmitions(user, response.event, target, object, io);
 
-      if (eventCopy.target.kind === 'Podcast') {
-        eventCopy.target = target;
-        eventCopy.agent = formatPopulatedUser(eventCopy.agent);
-      } else {
-        eventCopy = formatPopulatedEvent(eventCopy, object);
-      }
-
-      user.followers.map((follower) => {
-        if (follower !== eventCopy.target._id) {
-          io.emit(`users/${follower}/event`, eventCopy);
-        }
-        return follower;
-      });
-    }
+    handleFollowUppdateEmitions(response.event, io);
 
     return res.status(200).json(response);
   },
@@ -217,9 +202,28 @@ export default {
 
     if (user.errmsg) return res.status(404).json({ error: user });
 
-    const eventTypes = ['confirm', 'follow', 'recommend', 'subscribe', 'rating'];
+    const followingUsers = await findUsers({ _id: { $in: user.following } }).catch(error => error);
 
-    const query = { 'agent.item': { $in: user.following }, 'target.item': { $ne: userId }, type: { $in: eventTypes } };
+    const eventIds = [];
+
+    if (Array.isArray(followingUsers)) {
+      followingUsers.map((followedUser) => {
+        followedUser.events.map((event) => {
+          if (!eventIds.includes(event)) {
+            eventIds.push(event);
+          }
+          return event;
+        });
+
+        return followedUser;
+      });
+    }
+
+    const eventTypes = ['confirm', 'follow', 'recommend', 'subscribe', 'rating', 'newEpisode'];
+
+    const query = {
+      _id: { $in: eventIds }, 'agent.item': { $ne: userId }, 'target.item': { $ne: userId }, type: { $in: eventTypes },
+    };
     const skip = +offset;
     const limit = 10;
     const sort = { date: -1 };

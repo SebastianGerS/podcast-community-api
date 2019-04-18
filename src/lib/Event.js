@@ -1,15 +1,14 @@
 import R from 'ramda';
 import Event from '../Models/Event';
-
 import {
   find, create,
 } from '../Helpers/db';
 import { reduceToString } from '../Helpers/general';
 import { findOrCreatePodcast } from './Podcast';
-import { findOrCreateSubscription, deleteSubscription } from './Subscriptions';
+import { deleteSubscription, findSubscriptionById, createSubscription } from './Subscriptions';
 import { fetchAndEmitToSubscribers } from '../Helpers/fetch';
 import { findUsers } from './User';
-/* eslint-disable import/prefer-default-export */
+
 export const createEvent = R.partial(create, [Event]);
 export const findEvents = R.partial(find, [Event, {
   _id: 1, type: 1, agent: 1, target: 1, object: 1, date: 1,
@@ -103,11 +102,18 @@ export function extractItemIds(eventsWithItems, itemType) {
 
 export async function handleSubscribe(podcastId, userId, io) {
   const podcast = await findOrCreatePodcast({ _id: podcastId }).catch(error => error);
-  await findOrCreateSubscription({ _id: podcastId }).catch(error => error);
 
   if (podcast.errmsg) return podcast;
 
-  await fetchAndEmitToSubscribers(io, podcastId, userId);
+  const subscription = await findSubscriptionById(podcastId).catch(error => error);
+
+  if (subscription.errmsg) {
+    const newSubscription = createSubscription({ _id: podcastId }).catch(error => error);
+    if (newSubscription.errmsg) return newSubscription;
+
+    await fetchAndEmitToSubscribers(io, podcastId, userId);
+  }
+
   return true;
 }
 

@@ -108,7 +108,7 @@ export async function handleSubscribe(podcastId, userId, io) {
   const subscription = await findSubscriptionById(podcastId).catch(error => error);
 
   if (subscription.errmsg) {
-    const newSubscription = createSubscription({ _id: podcastId }).catch(error => error);
+    const newSubscription = await createSubscription({ _id: podcastId }).catch(error => error);
     if (newSubscription.errmsg) return newSubscription;
 
     await fetchAndEmitToSubscribers(io, podcastId, userId);

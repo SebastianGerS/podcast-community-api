@@ -155,7 +155,31 @@ export function sockets(io) {
         console.log(`${onlineUsers.length} user(s) online`);
       });
     });
+
+    socket.on('user/follows/status', (userId) => {
+      emitFollowsOnlineStatues(userId, onlineUsers, io);
+    });
   });
+}
+
+async function handleStatusEmitionForEvents(event, io) {
+  const emitionEventTypes = ['unfollow', 'remove'];
+
+  const targetId = event.target.item._id;
+  const agentId = event.agent.item._id;
+
+  if (emitionEventTypes.includes(event)) {
+    const agentUser = await findUserById(agentId).catch(error => error);
+
+    if (!agentUser.followers(targetId) && !agentUser.following(targetId)) {
+      io.emit(`users/${agentId}/follow/online`, { userId: targetId, online: false });
+    }
+
+    const targetUser = await findUserById(targetId).catch(error => error);
+    if (!targetUser.followers(targetId) && !targetUser.following(agentId)) {
+      io.emit(`users/${targetId}/follow/online`, { userId: agentId, online: false });
+    }
+  }
 }
 
 export async function handleFollowUppdateEmitions(event, io) {
@@ -184,6 +208,8 @@ export async function handleFollowUppdateEmitions(event, io) {
       io.emit(`users/${targetId}`, targetUser[0]);
     }
   }
+
+  handleStatusEmitionForEvents(event, io);
 }
 
 export async function handleEventEmitions(user, event, target, object, io) {

@@ -49,11 +49,11 @@ export async function emitUpdatedRatings(io, podcastId, podcastEpisodes, episode
 export async function createNewEpisodeEvent(io, listenNotesPodcast, userId = undefined) {
   const eventBody = {
     agent: {
-      item: listenNotesPodcast._id,
+      item: listenNotesPodcast.id,
       kind: 'Podcast',
     },
     object: {
-      item: listenNotesPodcast.episodes[0]._id,
+      item: listenNotesPodcast.episodes[0].id,
       kind: 'Episode',
     },
     type: 'newEpisode',
@@ -63,7 +63,7 @@ export async function createNewEpisodeEvent(io, listenNotesPodcast, userId = und
 
   const querySubscribers = {
     query: {
-      subscriptions: listenNotesPodcast._id,
+      subscriptions: listenNotesPodcast.id,
     },
   };
 
@@ -165,10 +165,10 @@ export function sockets(io) {
 async function handleStatusEmitionForEvents(event, io) {
   const emitionEventTypes = ['unfollow', 'remove'];
 
-  const targetId = event.target.item._id;
-  const agentId = event.agent.item._id;
-
   if (emitionEventTypes.includes(event)) {
+    const targetId = event.target.item._id;
+    const agentId = event.agent.item._id;
+
     const agentUser = await findUserById(agentId).catch(error => error);
 
     if (!agentUser.followers(targetId) && !agentUser.following(targetId)) {
@@ -176,6 +176,7 @@ async function handleStatusEmitionForEvents(event, io) {
     }
 
     const targetUser = await findUserById(targetId).catch(error => error);
+
     if (!targetUser.followers(targetId) && !targetUser.following(agentId)) {
       io.emit(`users/${targetId}/follow/online`, { userId: agentId, online: false });
     }
@@ -184,11 +185,13 @@ async function handleStatusEmitionForEvents(event, io) {
 
 export async function handleFollowUppdateEmitions(event, io) {
   const emitionEventTypes = ['follow', 'unfollow', 'request', 'unrequest', 'confirm', 'reject', 'remove'];
-  const targetId = event.target.item._id;
-  const agentId = event.agent.item._id;
 
   if (emitionEventTypes.includes(event.type)) {
+    const targetId = event.target.item._id;
+    const agentId = event.agent.item._id;
+
     const targetUserFollows = await getUserWithPopulatedFollows(targetId).catch(error => error);
+
     if (!targetUserFollows.errmsg) {
       io.emit(`users/${targetId}/follows`, targetUserFollows);
     }

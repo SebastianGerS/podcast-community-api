@@ -9,6 +9,9 @@ import {
   createEvent, extendObjectWithListenNotesItem, formatPopulatedUser, formatPopulatedEvent,
 } from '../lib/Event';
 import { createNotification } from '../lib/Notification';
+import {
+  findSessions, findOneSession, findAndUpdateSession, formatSessions,
+} from '../lib/Session';
 
 export async function emitUpdatedRatings(io, podcastId, podcastEpisodes, episodeId) {
   const episodeRatings = await findRatings({ query: { episode: episodeId } }).catch(error => error);
@@ -101,24 +104,56 @@ export async function createNewEpisodeEvent(io, listenNotesPodcast, userId = und
   }
 }
 
-export async function emitOnlineStatus(userId, io, online) {
+export async function emitUserSession(io, userId, session) {
   const query = { $or: [{ following: userId }, { followers: userId }] };
 
   const users = await findUsers({ query }).catch(error => error);
   if (Array.isArray(users)) {
     users.map((user) => {
-      io.emit(`users/${user._id}/follow/online`, { userId, online });
+      io.emit(`users/${user._id}/follow/online`, session);
       return user;
     });
   }
 }
 
-export async function emitFollowsOnlineStatues(userId, onlineUsers, io) {
+export async function updateAndEmitSession(io, userId, online, episode = undefined) {
+  const session = await findOneSession({ user: userId }).catch(error => error);
+
+  if (!session.errmsg) {
+    const sessionBody = online ? { online } : { online, listening_to: null };
+
+    if (episode !== undefined) {
+      sessionBody.listening_to = episode ? episode.id : null;
+    }
+
+    const updatedSession = await findAndUpdateSession(
+      session.id,
+      sessionBody,
+    ).catch(error => error);
+
+    const sessionCopy = JSON.parse(JSON.stringify(updatedSession));
+
+    if (episode !== undefined) {
+      sessionCopy.listening_to = episode;
+    }
+    emitUserSession(io, userId, sessionCopy);
+  }
+}
+
+export async function emitFollowSessions(io, userId) {
   const user = await findUserById(userId).catch(error => error);
 
   if (!user.errmsg) {
-    const onlineFollows = onlineUsers.filter(onlineUser => (
-      user.followers.includes(onlineUser) || user.following.includes(onlineUser)));
+    const query = {
+      user: {
+        $in: [...user.followers, ...user.following],
+      },
+      online: true,
+    };
+    const sessions = await findSessions({ query }).catch(error => error);
+
+    const onlineFollows = sessions.errmsg ? [] : await formatSessions(sessions);
+
     io.emit(`users/${userId}/follows/online`, onlineFollows);
   }
 }
@@ -135,29 +170,33 @@ export function sockets(io) {
     });
 
     socket.on('user/online', (userId) => {
-      let online = true;
+      if (!onlineUsers.includes(userId)) {
+        updateAndEmitSession(io, userId, true);
+        emitFollowSessions(io, userId);
+      }
 
       onlineUsers.push(userId);
-
-      emitOnlineStatus(userId, io, online);
-      emitFollowsOnlineStatues(userId, onlineUsers, io);
 
       console.log(`${onlineUsers.length} user(s) online`);
 
       socket.on('disconnect', () => {
-        online = false;
-
         const indexOfUserId = onlineUsers.indexOf(userId);
         onlineUsers.splice(indexOfUserId, 1);
 
-        emitOnlineStatus(userId, io, online);
+        if (!onlineUsers.includes(userId)) {
+          updateAndEmitSession(io, userId, false);
+        }
 
         console.log(`${onlineUsers.length} user(s) online`);
       });
     });
 
     socket.on('user/follows/status', (userId) => {
-      emitFollowsOnlineStatues(userId, onlineUsers, io);
+      emitFollowSessions(io, userId);
+    });
+
+    socket.on('user/listening', (episode, userId) => {
+      updateAndEmitSession(io, userId, true, episode);
     });
   });
 }

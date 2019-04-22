@@ -2,6 +2,7 @@ import uuidv4 from 'uuid/v4';
 import * as User from '../lib/User';
 import { hashPassword } from '../Helpers/db';
 import { createMetaUser } from '../lib/MetaUser';
+import { createSession } from '../lib/Session';
 
 export default {
   async create(req, res) {
@@ -37,6 +38,10 @@ export default {
     }).catch(error => error);
 
     if (metaUser.errmsg) return res.status(500).json({ error: metaUser, message: 'Error creating the metaUser' });
+
+    const session = await createSession({ user: user._id }).catch(error => error);
+
+    if (session.errmsg) return res.status(500).json({ error: session });
 
     const token = await User.auth(req.body).catch(error => error);
 

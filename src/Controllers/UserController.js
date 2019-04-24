@@ -3,6 +3,7 @@ import * as User from '../lib/User';
 import { hashPassword } from '../Helpers/db';
 import { createMetaUser } from '../lib/MetaUser';
 import { createSession } from '../lib/Session';
+import { uploadProfileImageToCloudinary, invalidImage } from '../Helpers/cloudinary';
 
 export default {
   async create(req, res) {
@@ -78,8 +79,26 @@ export default {
 
     if (req.params.userId && !req.isAdmin) return res.status(403).json({ error: 'Forbidden', message: 'You are not Authorzied to update this user' });
     if (req.body.type === 'admin' && !req.isAdmin) return res.status(403).json({ error: 'Forbidden', message: 'You are not Authorzied to update this users type to admin' });
+    if (req.uploadError) return res.status(req.uploadError.status).json({ error: req.uploadError });
 
     const userId = req.params.userId ? req.params.userId : req.userId;
+
+    if (req.file) {
+      if (await invalidImage(req.file)) return res.status(403).json({ error: { errmsg: 'The file content does not match the announced filetype this sugests that the file type has been manipulated' } });
+
+      const uploadedImage = await uploadProfileImageToCloudinary(userId, req.file.path)
+        .catch(error => error);
+
+      if (uploadedImage.errmsg) {
+        return res.status(uploadedImage.status).json({ error: uploadedImage });
+      }
+
+      req.body.profile_img = {
+        thumb: uploadedImage.eager[0].secure_url.replace(/(w_|h_)(660)/g, '$1150'),
+        standard: uploadedImage.eager[0].secure_url.replace(/(w_|h_)(660)/g, '$1400'),
+        large: uploadedImage.eager[0].secure_url,
+      };
+    }
     const response = await User.handleUserUpdate(userId, req.body).catch(error => error);
 
     if (response.errmsg) return res.status(500).json({ error: response });

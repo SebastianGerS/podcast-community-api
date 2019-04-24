@@ -1,4 +1,4 @@
-/* eslint-disable global-require, no-console, no-unused-vars */
+/* eslint-disable global-require, no-console, no-unused-vars, prefer-arrow-callback */
 import express from 'express';
 import http from 'http';
 import bodyParser from 'body-parser';
@@ -25,7 +25,7 @@ app.use(express.static(dir));
 app.use(cors(
   { origin: process.env.ALLOW_ORIGIN },
 ));
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(bodyParser.json());
 
 sockets(io);

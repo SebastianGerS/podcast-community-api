@@ -98,8 +98,8 @@ export async function searchListenNotes(query) {
   return response;
 }
 
-export async function fetchPodcastListenNotes(podcastId) {
-  const response = await fetchFromListenNotes('podcasts/', podcastId);
+export async function fetchPodcastListenNotes(podcastId, offset = undefined) {
+  const response = await fetchFromListenNotes('podcasts/', `${offset ? `${podcastId}?next_episode_pub_date=${offset}` : podcastId}`);
 
   return response;
 }

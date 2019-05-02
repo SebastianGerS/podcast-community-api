@@ -11,8 +11,6 @@ export const updateArray = (list, value) => {
   return addToArray(list, value);
 };
 
-export const removeHtmlFromString = string => (string.replace(/<(?:.|\n)*?>/gm, ''));
-
 const getSum = (array, key) => (array.reduce((sum, item) => sum + item[key], 0));
 
 export const getAvrage = (array, key) => (

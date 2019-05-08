@@ -97,7 +97,10 @@ export default {
     response.nextOffset = lnPodcast.next_episode_pub_date
       ? lnPodcast.next_episode_pub_date
       : undefined;
-    response.morePages = lnPodcast.next_episode_pub_date !== null;
+
+    response.morePages = (
+      lnPodcast.next_episode_pub_date !== null && lnPodcast.episodes.lenght === 10
+    );
 
     return res.status(200).json(response);
   },

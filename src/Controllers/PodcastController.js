@@ -94,6 +94,14 @@ export default {
       ? mapRatingsToListenNoteResults(lnPodcast.episodes, episodes)
       : lnPodcast.episodes;
 
+    response.episodes = response.episodes.map((episode) => {
+      const episodeCopy = episode;
+
+      episodeCopy.podcast_title = lnPodcast.title;
+
+      return episodeCopy;
+    });
+
     response.nextOffset = lnPodcast.next_episode_pub_date
       ? lnPodcast.next_episode_pub_date
       : undefined;

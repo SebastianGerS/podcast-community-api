@@ -1,9 +1,9 @@
 /* eslint-disable class-methods-use-this, global-require */
 import { Seeder } from 'mongoose-data-seed';
 import uuidv4 from 'uuid/v4';
-import { createUser, findOneUser, updateUser } from '../src/lib/User';
-import { createMetaUser } from '../src/lib/MetaUser';
-import { createSession } from '../src/lib/Session';
+import { createUser, findOneUser, updateUser } from '../dist/lib/User';
+import { createMetaUser } from '../dist/lib/MetaUser';
+import { createSession } from '../dist/lib/Session';
 
 if (!process.env.PORT) {
   require('dotenv').config();

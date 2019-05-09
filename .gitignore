@@ -3,6 +3,9 @@ node_modules
 .env
 /dist
 /builds
+/md-seed-dist
+/seeders-prod
+md-seed-config-prod.js
 
 yarn.lock
 yarn-error.log

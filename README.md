@@ -4,6 +4,7 @@
   - [Sites](#sites)
   - [Setup](#setup)
   - [Development](#development)
+    - [Mirgations](#mirgations)
     - [Linting](#linting)
       - [Workspace Settings](#workspace-settings)
       - [Flow](#flow)
@@ -41,6 +42,12 @@ But you will have to configure and set up your own mongodb if you chose to do so
 
 Any change should trigger a restart of nodemon in the container (same if your just using `yarn start`)
 
+### Mirgations
+Migrations can be created and run with `yarn md-seed run` inside the container note that new sedders should be added to the /seeders directory and imported into the md-seed-config.js note that the paths for imports should start with `../dist/` this is importent since we need to run the transpield versions of the src files to run this on the server, this also means that you will need to run `yarn build` localy before running the seeders (and re run that comand if any changes that your seeders are effected bye has been made in src).
+
+Also note that if you are runing the docker containers with production settings (using `Dockerfile_Prod` and `docker-compose.yml`) you will need to run both `yarn build-seeders` and `yarn build-seeder-conf` before building the containers this creates transpield versions of the fiels that `Dockerfile_Prod` will copy into the container
+
+For more instructions on how to write a seeder take a look at [md-seed](https://github.com/sharvit/mongoose-data-seed#readme)
 
 ### Linting
 

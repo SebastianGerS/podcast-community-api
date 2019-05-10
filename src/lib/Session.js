@@ -1,7 +1,7 @@
 import R from 'ramda';
 import Session from '../Models/Session';
 import {
-  findOrCreate, findAndUpdate, create, findOne, find,
+  findOrCreate, findAndUpdate, create, findOne, find, deleteOne,
 } from '../Helpers/db';
 import { fetchEpisodesListenNotes } from '../Helpers/fetch';
 import { reduceToString } from '../Helpers/general';
@@ -15,6 +15,7 @@ export const findOrCreateSession = R.partial(findOrCreate, [Session]);
 export const findAndUpdateSession = R.partial(findAndUpdate, [Session]);
 
 export const createSession = R.partial(create, [Session]);
+export const deleteSession = R.partial(deleteOne, [Session]);
 
 function mergeSessionsWithListenNotesData(sessions, fetchedEpisodes) {
   return sessions.map((session) => {

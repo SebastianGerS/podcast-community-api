@@ -138,6 +138,21 @@ export async function deleteOne(Model, input) {
   return response;
 }
 
+export async function deleteMany(Model, input) {
+  const response = await new Promise(
+    (resolve, reject) => Model.deleteMany(input, (error, output) => {
+      if (error) reject(error);
+      if (!output) {
+        const NotFoundError = new Error();
+        NotFoundError.errmsg = 'Not found';
+        reject(NotFoundError);
+      }
+      resolve(output);
+    }),
+  );
+  return response;
+}
+
 export async function hashPassword(password) {
   const rounds = 5;
   const newSalt = await bcrypt.genSalt(rounds).catch(error => error);

@@ -98,6 +98,7 @@ export default {
       const episodeCopy = episode;
 
       episodeCopy.podcast_title = lnPodcast.title;
+      episodeCopy.podcast_id = podcastId;
 
       return episodeCopy;
     });

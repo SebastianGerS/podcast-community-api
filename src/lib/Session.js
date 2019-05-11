@@ -1,7 +1,7 @@
 import R from 'ramda';
 import Session from '../Models/Session';
 import {
-  findOrCreate, findAndUpdate, create, findOne, find, deleteOne,
+  findOrCreate, findAndUpdate, create, findOne, find, deleteOne, updateMany,
 } from '../Helpers/db';
 import { fetchEpisodesListenNotes } from '../Helpers/fetch';
 import { reduceToString } from '../Helpers/general';
@@ -13,6 +13,7 @@ export const findSessions = R.partial(find, [Session,
   }]);
 export const findOrCreateSession = R.partial(findOrCreate, [Session]);
 export const findAndUpdateSession = R.partial(findAndUpdate, [Session]);
+export const updateSessions = R.partial(updateMany, [Session]);
 export const createSession = R.partial(create, [Session]);
 export const deleteSession = R.partial(deleteOne, [Session]);
 

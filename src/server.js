@@ -9,6 +9,7 @@ import db from './db';
 import routes from './Routes';
 import { handleCheckForNewEpisodes } from './Tasks/subscriptions';
 import { sockets } from './Helpers/socket';
+import { resetUserSessions } from './Tasks/resetUserSessions';
 
 if (!process.env.PORT) {
   require('dotenv').config();
@@ -33,6 +34,15 @@ sockets(io);
 server.listen(port, () => {
   console.log(`express is now listening to port ${port}`);
   handleCheckForNewEpisodes(io);
+  resetUserSessions().then((res) => {
+    if (res.nModified > 0) {
+      console.log('user sessions are now reset');
+    } else if (res.ok === 1) {
+      console.log('no user sessions needed to be reset');
+    } else {
+      console.log('error occured when trying to reset uesr sessions');
+    }
+  });
 });
 
 routes(app, io);

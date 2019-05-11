@@ -13,7 +13,6 @@ export const findSessions = R.partial(find, [Session,
   }]);
 export const findOrCreateSession = R.partial(findOrCreate, [Session]);
 export const findAndUpdateSession = R.partial(findAndUpdate, [Session]);
-
 export const createSession = R.partial(create, [Session]);
 export const deleteSession = R.partial(deleteOne, [Session]);
 
@@ -40,8 +39,10 @@ function mergeSessionsWithListenNotesData(sessions, fetchedEpisodes) {
 
 export async function formatSessions(sessions) {
   let formatedSessions;
-  const ids = sessions.filter(session => session.listening_to !== null)
+
+  const ids = sessions.filter(session => session.listening_to)
     .map(session => session.listening_to);
+
   if (ids.length !== 0) {
     const stringyfiedIds = reduceToString(ids, ',');
     const fetchedEpisodes = await fetchEpisodesListenNotes(`ids=${stringyfiedIds}`).catch(error => error);

@@ -10,14 +10,14 @@ if (!process.env.PORT) {
 }
 
 const metaUserIds = [
-  uuidv4(), uuidv4(), uuidv4(),
+  uuidv4(), uuidv4(), uuidv4(), uuidv4(),
 ];
 
 const userData = [{
   _id: uuidv4(),
   username: 'test',
   email: 'test@test.test',
-  password: 'password',
+  password: process.env.TEST_USER_PASSWORD,
   type: 'public',
   metaUser: metaUserIds[0],
 },
@@ -25,7 +25,7 @@ const userData = [{
   _id: uuidv4(),
   username: 'public',
   email: 'public@test.test',
-  password: 'password',
+  password: process.env.TEST_USER_PASSWORD,
   type: 'public',
   metaUser: metaUserIds[1],
 },
@@ -33,9 +33,17 @@ const userData = [{
   _id: uuidv4(),
   username: 'private',
   email: 'private@test.test',
-  password: 'password',
+  password: process.env.TEST_USER_PASSWORD,
   type: 'private',
   metaUser: metaUserIds[2],
+},
+{
+  _id: uuidv4(),
+  username: 'admin',
+  email: 'admin@test.test',
+  password: process.env.TEST_USER_PASSWORD,
+  type: 'admin',
+  metaUser: metaUserIds[3],
 }];
 
 const metaUserData = [{
@@ -49,6 +57,10 @@ const metaUserData = [{
 {
   _id: metaUserIds[2],
   user: userData[2]._id,
+},
+{
+  _id: metaUserIds[3],
+  user: userData[3]._id,
 }];
 
 const sessionData = [{
@@ -62,9 +74,13 @@ const sessionData = [{
 {
   user: userData[2]._id,
   online: false,
+},
+{
+  user: userData[3]._id,
+  online: false,
 }];
 
-class InitialSeeder extends Seeder {
+class testUserSeeder extends Seeder {
   async createUsers() {
     return new Promise(async (resolve, reject) => {
       const user = await createUser(userData).catch(error => error);
@@ -92,8 +108,8 @@ class InitialSeeder extends Seeder {
   async run() {
     const users = await this.createUsers().catch(error => error);
 
-    return users.errmsg || users.errors ? false : [1, 1, 1];
+    return users.errmsg || users.errors ? false : [1, 1, 1, 1];
   }
 }
 
-export default InitialSeeder;
+export default testUserSeeder;

@@ -108,7 +108,7 @@ export default {
       : undefined;
 
     response.morePages = (
-      lnPodcast.next_episode_pub_date !== null && lnPodcast.episodes.lenght === 10
+      lnPodcast.next_episode_pub_date !== null && lnPodcast.episodes.length === 10
     );
 
     return res.status(200).json(response);

@@ -1,10 +1,14 @@
-
+/* eslint-disable global-require */
 import C from '../Controllers';
 import verifyToken from '../Middleware/verifyToken';
 import { upload } from '../Middleware/upload';
 
+if (!process.env.PORT) {
+  require('dotenv').config();
+}
+
 export default (app, io) => {
-  app.get('/', (req, res) => res.redirect('https://documenter.getpostman.com/view/3252976/RWgnWzKb#intro'));
+  app.get('/', (req, res) => res.redirect(process.env.DOCUMENTATION_URL));
   app.get('/me', verifyToken, C.UserController.me);
   app.post('/users', C.UserController.create);
   app.post('/admin/users', verifyToken, C.UserController.create);

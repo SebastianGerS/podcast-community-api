@@ -4,7 +4,7 @@ import { hashPassword } from '../Helpers/db';
 import { createMetaUser, handleMetaUserUpdate } from '../lib/MetaUser';
 import { createSession, deleteSession } from '../lib/Session';
 import { uploadProfileImageToCloudinary, invalidImage } from '../Helpers/cloudinary';
-import { deleteEvents } from '../lib/Event';
+import { deleteEvents, findEvents } from '../lib/Event';
 import { deleteNotifications } from '../lib/Notification';
 
 export default {
@@ -132,9 +132,31 @@ export default {
         if (notifications.errmsg) return res.status(500).json({ error: notifications, message: 'Error occurred when trying to delete the user' });
       }
       if (user.events.length > 0) {
-        const query = { _id: { $in: user.events } };
-        const events = await deleteEvents(query).catch(error => error);
+        const querySharedEvents = { _id: { $in: user.events }, type: { $nin: ['newEpisode', 'rating', 'subscribe', 'unsubscribe'] } };
+        const events = await findEvents({ query: querySharedEvents }).catch(error => error);
+
         if (events.errmsg) return res.status(500).json({ error: events, message: 'Error occurred when trying to delete the user' });
+
+        await Promise.all(events.map(async (event) => {
+          const userWithEvent = await User.findOneUser(
+            { _id: { $ne: userId }, events: event._id },
+          ).catch(error => error);
+
+          if (userWithEvent.errmsg) return res.status(500).json({ error: userWithEvent, message: 'Error occurred when trying to delete the user' });
+
+          const updatedUser = await User.handleUserUpdate(
+            userWithEvent._id, { events: event._id },
+          ).catch(error => error);
+
+          if (updatedUser.errmsg) return res.status(500).json({ error: updatedUser, message: 'Error occurred when trying to delete the user' });
+
+          return event;
+        }));
+
+        const query = { _id: { $in: user.events }, type: { $ne: 'newEpisode' } };
+        const deletedEvents = await deleteEvents(query).catch(error => error);
+
+        if (deletedEvents.errmsg) return res.status(500).json({ error: deletedEvents, message: 'Error occurred when trying to delete the user' });
       }
 
       if (user.followers.length > 0) {

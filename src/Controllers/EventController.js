@@ -134,6 +134,8 @@ export default {
 
         const updateTargetUser = await handleUserUpdate(target._id, targetBody);
 
+        body.events = response.event._id;
+
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'confirm') {
         body.events = response.event._id;

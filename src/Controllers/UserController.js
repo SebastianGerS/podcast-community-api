@@ -5,7 +5,9 @@ import { createMetaUser, handleMetaUserUpdate } from '../lib/MetaUser';
 import { createSession, deleteSession } from '../lib/Session';
 import { uploadProfileImageToCloudinary, invalidImage } from '../Helpers/cloudinary';
 import { deleteEvents, findEvents } from '../lib/Event';
-import { deleteNotifications } from '../lib/Notification';
+import { deleteNotifications, findNotification, deleteNotification } from '../lib/Notification';
+import { deleteCategories } from '../lib/Category';
+import { deleteSubscription } from '../lib/Subscriptions';
 
 export default {
   async create(req, res) {
@@ -135,28 +137,67 @@ export default {
         const querySharedEvents = { _id: { $in: user.events }, type: { $nin: ['newEpisode', 'rating', 'subscribe', 'unsubscribe'] } };
         const events = await findEvents({ query: querySharedEvents }).catch(error => error);
 
-        if (events.errmsg) return res.status(500).json({ error: events, message: 'Error occurred when trying to delete the user' });
+        if (!events.errmsg) {
+          await Promise.all(events.map(async (event) => {
+            const userWithEvent = await User.findOneUser(
+              { _id: { $ne: userId }, events: event._id },
+            ).catch(error => error);
 
-        await Promise.all(events.map(async (event) => {
-          const userWithEvent = await User.findOneUser(
-            { _id: { $ne: userId }, events: event._id },
-          ).catch(error => error);
+            if (!userWithEvent.errmsg) {
+              const fieldsToUpdate = { events: event._id };
+              const query = { user: userWithEvent._id, event: event._id };
+              const relatedNotification = await findNotification(query).catch(error => error);
 
-          if (userWithEvent.errmsg) return res.status(500).json({ error: userWithEvent, message: 'Error occurred when trying to delete the user' });
+              if (!relatedNotification.errmsg) {
+                const deletedNotification = await deleteNotification(
+                  { _id: relatedNotification._id },
+                ).catch(error => error);
 
-          const updatedUser = await User.handleUserUpdate(
-            userWithEvent._id, { events: event._id },
-          ).catch(error => error);
+                if (deletedNotification.errmsg) return res.status(500).json({ error: deletedNotification, message: 'Error occurred when trying to delete the user' });
 
-          if (updatedUser.errmsg) return res.status(500).json({ error: updatedUser, message: 'Error occurred when trying to delete the user' });
+                fieldsToUpdate.notifications = relatedNotification._id;
+              }
 
-          return event;
-        }));
+              const updatedUser = await User.handleUserUpdate(
+                userWithEvent._id, fieldsToUpdate,
+              ).catch(error => error);
+
+              if (updatedUser.errmsg) return res.status(500).json({ error: updatedUser, message: 'Error occurred when trying to delete the user' });
+            }
+
+            return event;
+          }));
+        }
 
         const query = { _id: { $in: user.events }, type: { $ne: 'newEpisode' } };
         const deletedEvents = await deleteEvents(query).catch(error => error);
 
         if (deletedEvents.errmsg) return res.status(500).json({ error: deletedEvents, message: 'Error occurred when trying to delete the user' });
+      }
+
+      if (user.categories.length > 0) {
+        const deletedCategoires = await deleteCategories(
+          { _id: { $in: user.categories } },
+        ).catch(error => error);
+        if (deletedCategoires.errmsg) return res.status(500).json({ error: deletedCategoires, message: 'Error occurred when trying to delete the user' });
+      }
+
+      if (user.subscriptions.length > 0) {
+        await Promise.all(user.subscriptions.map(async (subscription) => {
+          const query = { _id: { $ne: userId }, subscriptions: subscription };
+
+          const usersWithSubscription = await User.findUsers({ query }).catch(error => error);
+
+          if (usersWithSubscription.errmsg === 'No results where found') {
+            const deletedSubscription = await deleteSubscription(
+              subscription,
+            ).catch(error => error);
+
+            if (deletedSubscription.errmsg) return res.status(500).json({ error: deletedSubscription, message: 'Error occurred when trying to delete the user' });
+          }
+
+          return usersWithSubscription;
+        }));
       }
 
       if (user.followers.length > 0) {

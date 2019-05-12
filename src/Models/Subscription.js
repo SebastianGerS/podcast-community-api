@@ -3,7 +3,9 @@ import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const SubscriptionSchema = new Schema({
-  _id: { type: String, unique: true, required: true },
+  _id: {
+    type: String, unique: true, required: true, ref: 'Podcast',
+  },
   updated_at: { type: Date, default: new Date() },
 });
 

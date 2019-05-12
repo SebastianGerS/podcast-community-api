@@ -31,7 +31,7 @@ const UserSchema = new Schema({
   followers: [{ type: String, ref: 'User' }],
   requests: [{ type: String, ref: 'User' }],
   listenlist: [{ type: String, ref: 'Episode' }],
-  subscriptions: [{ type: String, ref: 'Podcast' }],
+  subscriptions: [{ type: String, ref: 'Subscription' }],
   notifications: [{ type: Schema.Types.ObjectId, ref: 'Notification' }],
   events: [{ type: Schema.Types.ObjectId, ref: 'Event' }],
   restricted: [{ type: String, ref: 'User' }],

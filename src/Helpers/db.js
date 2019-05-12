@@ -134,6 +134,7 @@ export async function handleUpdate(Model, modelArrays, id, body) {
     }
     return input;
   });
+
   const response = await update(Model, id, input).catch(error => error);
 
   return response;

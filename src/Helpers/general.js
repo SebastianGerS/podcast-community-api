@@ -1,14 +1,19 @@
 import R from 'ramda';
 
-export const removeFromArray = (list, value) => list.filter(element => element !== value);
+export const removeFromArray = (list, value) => (
+  list.filter(element => element.toString() !== value.toString())
+);
 
 export const addToArray = (list, value) => [...list, value];
 
 export const updateArray = (list, value) => {
-  if (list.includes(value)) {
-    return removeFromArray(list, value);
+  const stringifyedList = list.map(item => item.toString());
+  if (stringifyedList.includes(value.toString())) {
+    const removed = removeFromArray(list, value);
+    return removed;
   }
-  return addToArray(list, value);
+  const added = addToArray(list, value);
+  return added;
 };
 
 const getSum = (array, key) => (array.reduce((sum, item) => sum + item[key], 0));

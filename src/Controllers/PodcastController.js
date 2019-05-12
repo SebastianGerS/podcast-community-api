@@ -5,6 +5,7 @@ import {
 } from '../Helpers/fetch';
 import { findOrCreatePodcast, findPodcasts } from '../lib/Podcast';
 import { reduceToString } from '../Helpers/general';
+import { findEpisodes } from '../lib/Episode';
 
 export default {
   async find(req, res) {
@@ -70,20 +71,45 @@ export default {
   },
   async findOne(req, res) {
     const { podcastId } = req.params;
-
+    const { offset } = req.query;
     const response = {};
 
-    const lnPodcast = await fetchPodcastListenNotes(podcastId);
-
+    const lnPodcast = await fetchPodcastListenNotes(podcastId, offset);
     if (lnPodcast.errmsg) return res.status(lnPodcast.status).json({ error: lnPodcast });
 
-    response.podcast = lnPodcast;
+    if (!offset) {
+      response.podcast = lnPodcast;
+      const podcast = await findOrCreatePodcast({ _id: podcastId }).catch(error => error);
 
-    const podcast = await findOrCreatePodcast({ _id: podcastId }).catch(error => error);
+      if (podcast.errmsg) return res.status(podcast.status).json({ error: podcast });
 
-    if (podcast.errmsg) return res.status(podcast.status).json({ error: podcast });
+      response.podcast.avrageRating = podcast.avrageRating;
+    }
 
-    response.podcast.avrageRating = podcast.avrageRating;
+    const itemIds = lnPodcast.episodes.map(item => item.id);
+    const episodes = await findEpisodes({ query: { _id: { $in: itemIds } } })
+      .catch(error => error);
+
+    response.episodes = Array.isArray(episodes)
+      ? mapRatingsToListenNoteResults(lnPodcast.episodes, episodes)
+      : lnPodcast.episodes;
+
+    response.episodes = response.episodes.map((episode) => {
+      const episodeCopy = episode;
+
+      episodeCopy.podcast_title = lnPodcast.title;
+      episodeCopy.podcast_id = podcastId;
+
+      return episodeCopy;
+    });
+
+    response.nextOffset = lnPodcast.next_episode_pub_date
+      ? lnPodcast.next_episode_pub_date
+      : undefined;
+
+    response.morePages = (
+      lnPodcast.next_episode_pub_date !== null && lnPodcast.episodes.length === 10
+    );
 
     return res.status(200).json(response);
   },

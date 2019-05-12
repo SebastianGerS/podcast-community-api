@@ -10,6 +10,10 @@ RUN yarn --prod
 COPY dist /api/dist
 # Copy the .env file into the container at /api
 COPY .env /api/
+# Copy the seeder files into the container at /api
+COPY seeders-prod /api/seeders
+COPY md-seed-generator.json /api/
+COPY md-seed-config-prod.js /api/md-seed-config.js
 # declare a env variable that can be set from the docker-compose file
 ENV PORT=3000
 # Make the port available to the world outside this container

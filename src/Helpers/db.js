@@ -106,6 +106,22 @@ export async function findAndUpdate(Model, _id, input) {
   return response;
 }
 
+export async function updateMany(Model, query, input) {
+  const response = await new Promise(
+
+    (resolve, reject) => Model.updateMany(query, input, (error, output) => {
+      if (error) reject(error);
+      if (!output) {
+        const NotFoundError = new Error();
+        NotFoundError.errmsg = 'Not found';
+        reject(NotFoundError);
+      }
+      resolve(output);
+    }),
+  );
+  return response;
+}
+
 export async function handleUpdate(Model, modelArrays, id, body) {
   const input = {};
   const model = await findById(Model, id).catch(error => error);
@@ -118,6 +134,7 @@ export async function handleUpdate(Model, modelArrays, id, body) {
     }
     return input;
   });
+
   const response = await update(Model, id, input).catch(error => error);
 
   return response;
@@ -126,6 +143,21 @@ export async function handleUpdate(Model, modelArrays, id, body) {
 export async function deleteOne(Model, input) {
   const response = await new Promise(
     (resolve, reject) => Model.deleteOne(input, (error, output) => {
+      if (error) reject(error);
+      if (!output) {
+        const NotFoundError = new Error();
+        NotFoundError.errmsg = 'Not found';
+        reject(NotFoundError);
+      }
+      resolve(output);
+    }),
+  );
+  return response;
+}
+
+export async function deleteMany(Model, input) {
+  const response = await new Promise(
+    (resolve, reject) => Model.deleteMany(input, (error, output) => {
       if (error) reject(error);
       if (!output) {
         const NotFoundError = new Error();

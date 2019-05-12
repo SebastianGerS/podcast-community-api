@@ -1,7 +1,7 @@
 import R from 'ramda';
 import Event from '../Models/Event';
 import {
-  find, create,
+  find, create, deleteMany,
 } from '../Helpers/db';
 import { reduceToString } from '../Helpers/general';
 import { findOrCreatePodcast } from './Podcast';
@@ -13,6 +13,7 @@ export const createEvent = R.partial(create, [Event]);
 export const findEvents = R.partial(find, [Event, {
   _id: 1, type: 1, agent: 1, target: 1, object: 1, date: 1,
 }]);
+export const deleteEvents = R.partial(deleteMany, [Event]);
 
 export function formatPopulatedEvent(event, object = event.object) {
   const eventCopy = JSON.parse(JSON.stringify(event));

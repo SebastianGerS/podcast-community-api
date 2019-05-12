@@ -134,6 +134,8 @@ export default {
 
         const updateTargetUser = await handleUserUpdate(target._id, targetBody);
 
+        body.events = response.event._id;
+
         if (updateTargetUser.errmsg) return res.status(500).json({ error: updateTargetUser, message: 'Error creating the notification' });
       } else if (response.event.type === 'confirm') {
         body.events = response.event._id;
@@ -202,7 +204,9 @@ export default {
 
     if (user.errmsg) return res.status(404).json({ error: user });
 
-    const followingUsers = await findUsers({ _id: { $in: user.following } }).catch(error => error);
+    const followingUsers = user.following.length > 0
+      ? await findUsers({ _id: { $in: user.following } }).catch(error => error)
+      : [];
 
     const eventIds = [];
 

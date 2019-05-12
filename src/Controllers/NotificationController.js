@@ -13,13 +13,17 @@ export default {
     const limit = 10;
     const sort = { date: -1 };
 
-    const notificationsPart = await findNotifications({
-      query, skip, limit, sort,
-    }).catch(error => error);
+    const notificationsPart = user.notifications.length > 0
+      ? await findNotifications({
+        query, skip, limit, sort,
+      }).catch(error => error)
+      : [];
 
     if (notificationsPart.errmsg) return res.status(404).json({ error: notificationsPart });
 
-    const notificationsFull = await findNotifications({ query }).catch(error => error);
+    const notificationsFull = user.notifications.length > 0
+      ? await findNotifications({ query }).catch(error => error)
+      : [];
 
     if (notificationsFull.errmsg) return res.status(404).json({ error: notificationsFull });
 
@@ -29,7 +33,9 @@ export default {
 
     const morePages = total - skip !== count;
 
-    const formatedNotifications = await formatNotifications(notificationsPart);
+    const formatedNotifications = user.notifications.length > 0
+      ? await formatNotifications(notificationsPart)
+      : [];
 
     const numberOfUnobserved = notificationsFull.reduce(
       (unobservedCount, notification) => (

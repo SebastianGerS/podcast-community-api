@@ -1,5 +1,4 @@
 import { fetchEpisodeListenNotes } from '../Helpers/fetch';
-import { removeHtmlFromString } from '../Helpers/general';
 import { findOrCreateEpisode } from '../lib/Episode';
 
 export default {
@@ -14,7 +13,6 @@ export default {
 
     if (episode.errmsg) return res.status(404).json({ error: episode });
 
-    lnEpisode.description = removeHtmlFromString(lnEpisode.description);
     lnEpisode.podcast_id = lnEpisode.podcast.id;
     lnEpisode.avrageRating = episode.avrageRating;
 

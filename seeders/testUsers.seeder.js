@@ -80,7 +80,7 @@ const sessionData = [{
   online: false,
 }];
 
-class testUserSeeder extends Seeder {
+class testUsersSeeder extends Seeder {
   async createUsers() {
     return new Promise(async (resolve, reject) => {
       const user = await createUser(userData).catch(error => error);
@@ -112,4 +112,4 @@ class testUserSeeder extends Seeder {
   }
 }
 
-export default testUserSeeder;
+export default testUsersSeeder;

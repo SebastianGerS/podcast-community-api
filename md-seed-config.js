@@ -1,7 +1,7 @@
 /* eslint-disable global-require */
 import mongooseLib from 'mongoose';
 import initialSeeder from './seeders/initial.seeder';
-import testUserSeeder from './seeders/testUsers.seeder';
+import testUsersSeeder from './seeders/testUsers.seeder';
 
 if (!process.env.PORT) {
   require('dotenv').config();
@@ -26,5 +26,5 @@ export const mongoURL = `mongodb://${username}:${password}@${db}`;
 */
 export const seedersList = {
   initialSeeder,
-  testUserSeeder,
+  testUsersSeeder,
 };

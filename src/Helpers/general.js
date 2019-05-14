@@ -30,7 +30,7 @@ export const reduceToString = (array, separator) => {
       return `${acumulator}${separator}${item}`;
     }
 
-    return `${acumulator}${separator}${item}${separator}`;
+    return `${acumulator}${separator}${item}`;
   });
 
   return stringifiedArray;

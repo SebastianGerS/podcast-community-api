@@ -25,7 +25,9 @@ export default {
         return res.status(404).json({ error: { errmsg: 'Not Found' } });
       }
 
-      const podcasts = await findPodcasts({ query: { _id: { $in: user.subscriptions } } });
+      const podcasts = await findPodcasts(
+        { query: { _id: { $in: user.subscriptions } } },
+      ).catch(error => error);
 
       response.subscriptions = Array.isArray(podcasts)
         ? mapRatingsToListenNoteResults(subscriptions, podcasts)
